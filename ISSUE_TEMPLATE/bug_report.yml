@@ -1,0 +1,82 @@
+name: Bug Report
+description: バグ報告・不具合報告
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## バグ報告テンプレート
+        不具合の詳細を記入してください。
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: 優先度を選択してください
+      options:
+        - P0: Critical (本番障害)
+        - P1: High (機能停止)
+        - P2: Medium (機能劣化)
+        - P3: Low (軽微な問題)
+      default: 2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dod_level
+    attributes:
+      label: DoD Level (品質基準)
+      description: 修正の品質レベルを選択
+      options:
+        - Bronze (最低限の修正)
+        - Silver (回帰テスト含む) ← 推奨
+        - Gold (完全なテストカバレッジ)
+      default: 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: バグの説明
+      description: 何が起きているか説明してください
+      placeholder: 期待する動作と実際の動作を説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 再現手順
+      description: バグを再現する手順
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 環境情報
+      description: 発生環境の情報
+      placeholder: |
+        - OS:
+        - ブラウザ:
+        - バージョン:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: エラーログ・スクリーンショット
+      description: エラーメッセージやスクリーンショットがあれば添付
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 事前確認
+      options:
+        - label: 重複Issueがないことを確認しました
+          required: true

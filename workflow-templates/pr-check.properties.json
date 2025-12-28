@@ -1,0 +1,6 @@
+{
+  "name": "PROLE-ISLAND PR Check",
+  "description": "PR規約チェック（ブランチ命名・Issue紐付け）",
+  "iconName": "octicon git-pull-request",
+  "categories": ["Automation"]
+}

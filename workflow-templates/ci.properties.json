@@ -1,0 +1,6 @@
+{
+  "name": "PROLE-ISLAND CI",
+  "description": "組織標準のCIワークフロー（lint, type-check, test, build）",
+  "iconName": "octicon check-circle",
+  "categories": ["Node.js", "TypeScript"]
+}
