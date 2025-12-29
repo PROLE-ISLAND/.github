@@ -1,0 +1,6 @@
+{
+  "name": "PR Governance",
+  "description": "Why必須チェック・自動ラベリング・変更サマリー生成",
+  "iconName": "octicon shield-check",
+  "categories": ["Automation", "Pull Request"]
+}
