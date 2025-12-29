@@ -1,0 +1,6 @@
+{
+  "name": "v0 UI Generation",
+  "description": "Issueにv0-generateラベルを付けると自動でUI生成",
+  "iconName": "zap",
+  "categories": ["Automation"]
+}

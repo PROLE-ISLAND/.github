@@ -1,0 +1,100 @@
+name: v0 UI Generation
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  generate:
+    if: github.event.label.name == 'v0-generate'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract prompt from issue
+        id: extract
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+
+            // Look for v0 prompt section in issue body
+            const promptMatch = body.match(/## v0 Prompt\s*\n([\s\S]*?)(?=\n##|$)/i);
+            const prompt = promptMatch ? promptMatch[1].trim() : '';
+
+            if (!prompt) {
+              core.setFailed('v0 Prompt section not found in issue body');
+              return;
+            }
+
+            core.setOutput('prompt', prompt);
+            core.setOutput('issue_number', issue.number);
+
+      - name: Generate UI with v0
+        id: v0
+        env:
+          V0_API_KEY: ${{ secrets.V0_API_KEY }}
+        run: |
+          PROMPT="${{ steps.extract.outputs.prompt }}"
+
+          RESPONSE=$(curl -s -X POST "https://api.v0.dev/v1/chats" \
+            -H "Authorization: Bearer $V0_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"message\": $(echo "$PROMPT" | jq -Rs .)}")
+
+          WEB_URL=$(echo "$RESPONSE" | jq -r '.webUrl // empty')
+          DEMO_URL=$(echo "$RESPONSE" | jq -r '.latestVersion.demoUrl // empty')
+
+          if [ -z "$WEB_URL" ]; then
+            echo "Error: v0 generation failed"
+            echo "$RESPONSE" | jq .
+            exit 1
+          fi
+
+          echo "web_url=$WEB_URL" >> $GITHUB_OUTPUT
+          echo "demo_url=$DEMO_URL" >> $GITHUB_OUTPUT
+
+      - name: Comment on issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = ${{ steps.extract.outputs.issue_number }};
+            const webUrl = '${{ steps.v0.outputs.web_url }}';
+            const demoUrl = '${{ steps.v0.outputs.demo_url }}';
+
+            const comment = `## 🎨 v0 UI Generated!
+
+            **Demo**: ${demoUrl}
+            **Edit**: ${webUrl}
+
+            コードを確認して、実装に進んでください。
+
+            ---
+            *Generated automatically by v0 GitHub Action*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: comment
+            });
+
+            // Remove v0-generate label and add v0-generated
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              name: 'v0-generate'
+            });
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              labels: ['v0-generated']
+            });
