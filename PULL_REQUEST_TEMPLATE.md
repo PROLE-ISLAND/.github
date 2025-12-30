@@ -29,11 +29,21 @@ closes #
 
 > **📚 参照**: [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート)
 
-**関連Issueの要件定義ステータス**:
-- [ ] **要件定義承認済み** ← 関連Issueに `requirements-approved` ラベルあり
-- [ ] 要件定義不要 ← バグ修正・ドキュメント・CI修正など（`no-requirements` ラベル付与）
+### 詳細要件定義ファイル
 
-⚠️ **注意**: 新機能（feat）のPRで `requirements-approved` ラベルがない場合、CIでブロックされます。
+**ファイルパス**: `docs/requirements/REQ-{Issue番号}.md`
+
+- [ ] **詳細要件定義ファイルあり** ← 上記パスにファイルが存在
+- [ ] 要件定義不要 ← バグ修正・ドキュメント・CI修正など
+
+### 関連Issueのラベル確認
+
+- [ ] **requirements-approved** ラベルあり
+- [ ] **design-approved** ラベルあり（UI変更がある場合）
+
+⚠️ **注意**:
+- 新機能（feat）のPRで詳細要件定義ファイルがない場合、CIでブロック
+- `requirements-approved` ラベルがない場合もCIでブロック
 
 ## 5. DoD Level
 

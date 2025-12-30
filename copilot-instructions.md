@@ -187,16 +187,40 @@ gh issue list -l "ready-to-develop" --json number,title,labels -q '.[] | "\(.num
 gh issue view {番号}
 ```
 
-**Step 4: 要件定義の作成** ⚠️必須（新規）
+**Step 4〜8: 要件定義フロー（2段階）** ⚠️必須
 
-> **📚 参照**: [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート)
+> **📚 参照**: [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート) | [V0-Figma活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/V0-Figma活用ガイド)
+
+```
+【2段階要件定義フロー】
+
+Stage 1: ラフ要件定義 + デザインモック
+    │
+    ├── Step 4: Issueコメントでラフ要件定義
+    ├── Step 5: V0でデザインモック作成
+    └── Step 6: デザインレビュー・承認
+    │
+    ▼
+Stage 2: 詳細要件定義（MDファイル確定版）
+    │
+    ├── Step 7: 詳細要件定義MDファイル作成
+    └── Step 8: 詳細要件定義の承認
+    │
+    ▼
+Stage 3: 実装 → PR
+```
 
 **要件定義が必要な条件**:
 - 新機能（feature）の実装
-- 大規模なリファクタリング
+- UI変更を伴う修正
 - DB/API設計変更を伴う修正
 
-**要件定義の手順**:
+---
+
+### Stage 1: ラフ要件定義 + デザインモック
+
+**Step 4: ラフ要件定義をIssueコメントに投稿**
+
 ```bash
 # 1. Issueの内容を詳細に調査
 gh issue view {番号}
@@ -204,87 +228,27 @@ gh issue view {番号}
 # 2. 関連コードの調査
 # - 影響範囲の特定
 # - 既存実装の確認
-# - 技術的制約の把握
 
-# 3. 要件定義をIssueコメントとして投稿
+# 3. ラフ要件定義をIssueコメントとして投稿
 gh issue comment {番号} --body "$(cat <<'EOF'
-## 要件定義
+## ラフ要件定義（Stage 1）
 
-### Phase 2: 要件定義・ユースケース
-
-#### 2.1 機能概要
+### 機能概要
 **目的（Why）**:
 **対象ユーザー（Who）**:
 **達成したい価値（What）**:
 
-#### 2.2 ユースケース定義（Role × Outcome）
+### ユースケース（ラフ）
 | UC-ID | Role | Outcome | 説明 |
 |-------|------|---------|------|
 | UC-XXX-XXX-XXX-WEB | | | |
 
-#### 2.3 カバレッジマトリクス（MECE証明）
-| Role \ Outcome | Outcome1 | Outcome2 |
-|----------------|----------|----------|
-| Admin          |          |          |
-| User           |          |          |
+### 技術的制約・考慮事項
+-
 
----
-
-### Phase 3: 品質基準
-
-#### DoD Level
-- [ ] Bronze / [ ] Silver / [ ] Gold
-
-#### Pre-mortem（失敗シナリオ）
-| # | 失敗シナリオ | 発生確率 | 対策 |
-|---|------------|---------|------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-
----
-
-### Phase 4: 技術設計
-
-#### 4.1 DB設計
-<!-- 新規テーブル or 変更がある場合 -->
-
-#### 4.2 API設計
-| Method | Path | 説明 | 認証 |
-|--------|------|------|------|
-| | | | |
-
-#### 4.3 UI設計
-**Figma/v0 Link**:
-**data-testid 命名**:
-| 要素 | data-testid |
-|------|-------------|
-| | |
-
-#### 4.4 変更ファイル一覧
-| パス | 変更種別 | 説明 |
-|-----|---------|------|
-| | 新規/変更 | |
-
----
-
-### Phase 5: テスト設計
-
-#### Gold E2E 対象か？
-- [ ] はい / [ ] いいえ
-
-#### 5つのレンズ評価
-| # | レンズ | Yes/No | 根拠 |
-|---|--------|--------|------|
-| 1 | 壊れたら困るか？ | | |
-| 2 | 振る舞いを見てるか？ | | |
-| 3 | 嘘をついて通れないか？ | | |
-| 4 | 1文で説明できるか？ | | |
-| 5 | 無いと何を諦めるか？ | | |
-
----
-
-**承認依頼**: @レビュアー
+### 次のステップ
+- [ ] V0でデザインモック作成
+- [ ] デザインレビュー依頼
 EOF
 )"
 
@@ -292,21 +256,115 @@ EOF
 gh issue edit {番号} --add-label "needs-requirements"
 ```
 
-**Step 5: 要件定義の承認待ち**
+**Step 5: V0でデザインモック作成**
 
-- レビュアーが要件定義コメントを確認
-- 承認されたら `needs-requirements` → `requirements-approved` に変更
-- `requirements-approved` ラベルがないとPR作成不可
+> 📚 参照: [V0-Figma活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/V0-Figma活用ガイド)
 
-**Step 6: ブランチ作成**（要件定義承認後）
 ```bash
+# V0でデザインモックを作成し、リンクをIssueコメントに追加
+gh issue comment {番号} --body "$(cat <<'EOF'
+## デザインモック
+
+**v0 Link**: https://v0.dev/chat/xxx
+**Figma Link**: （詳細化した場合）
+
+### 画面一覧
+| 画面 | パス | 状態 |
+|------|------|------|
+| | /xxx | Draft |
+
+### レビュー依頼
+@レビュアー デザインモックのレビューをお願いします
+EOF
+)"
+
+# design-reviewラベルを付与
+gh issue edit {番号} --add-label "design-review"
+```
+
+**Step 6: デザインレビュー・承認**
+
+- レビュアーがデザインモックを確認
+- フィードバック → 修正 → 再レビュー
+- 承認されたら `design-review` → `design-approved` に変更
+
+---
+
+### Stage 2: 詳細要件定義（MDファイル確定版）
+
+**Step 7: 詳細要件定義MDファイル作成**
+
+デザインが確定したら、詳細要件定義をMDファイルとして作成。
+これが実装の基準となる確定版ドキュメント。
+
+```bash
+# 1. ブランチ作成
+git checkout -b docs/issue-{番号}-requirements
+
+# 2. 詳細要件定義ファイルを作成
+# パス: docs/requirements/REQ-{番号}.md
+# テンプレート: Wikiの要件定義テンプレートに従う
+
+# 3. コミット・プッシュ
+git add docs/requirements/REQ-{番号}.md
+git commit -m "docs: Issue #{番号} 詳細要件定義"
+git push -u origin docs/issue-{番号}-requirements
+
+# 4. PRを作成（要件定義レビュー用）
+gh pr create --title "docs: Issue #{番号} 詳細要件定義" --body "$(cat <<'EOF'
+## 詳細要件定義
+
+**関連Issue**: #{番号}
+**デザインモック**: [v0 Link](https://v0.dev/chat/xxx)
+
+### レビュー依頼
+詳細要件定義のレビューをお願いします。
+承認後、実装を開始します。
+EOF
+)"
+```
+
+**詳細要件定義MDファイルの内容**（docs/requirements/REQ-{番号}.md）:
+- Phase 2: ユースケース定義、カバレッジマトリクス
+- Phase 3: DoD Level、Pre-mortem
+- Phase 4: DB設計、API設計、UI設計（v0/Figmaリンク）、data-testid
+- Phase 5: Gold E2E判定、GWT仕様
+
+**Step 8: 詳細要件定義の承認**
+
+- レビュアーがMDファイルをレビュー
+- PRがマージされたら `requirements-approved` ラベルを付与
+- 実装開始可能
+
+```bash
+# 承認後、Issueラベルを更新
+gh issue edit {番号} --remove-label "needs-requirements" --add-label "requirements-approved"
+gh issue edit {番号} --add-label "ready-to-develop"
+```
+
+---
+
+### Stage 3: 実装 → PR
+
+**Step 9: ブランチ作成**（詳細要件定義承認後）
+```bash
+git checkout main && git pull
 git checkout -b feature/issue-{番号}-{簡潔な説明}
 # 例: git checkout -b feature/issue-42-add-pdf-export
 ```
 
-**Step 7: 開発完了後のPR作成**
+**Step 10: 開発完了後のPR作成**
 ```bash
-gh pr create --title "feat: {説明}" --body "closes #{番号}"
+gh pr create --title "feat: {説明}" --body "$(cat <<'EOF'
+closes #{番号}
+
+## 詳細要件定義
+docs/requirements/REQ-{番号}.md
+
+## 実装内容
+-
+EOF
+)"
 ```
 
 ---
@@ -326,23 +384,45 @@ gh pr create --title "feat: {説明}" --body "closes #{番号}"
 | `design-approved` | デザイン承認済み |
 | `no-ui` | UI変更なし |
 
-### 要件定義ラベルフロー
+### 要件定義ラベルフロー（2段階）
 
 ```
+【Stage 1: ラフ要件定義 + デザインモック】
+
 Issue作成
     ↓
-`needs-requirements` 付与（要件定義必要な場合）
+`needs-requirements` 付与
     ↓
-要件定義コメント投稿
+ラフ要件定義コメント投稿
     ↓
-レビュアー承認
+V0デザインモック作成 → `design-review` 付与
     ↓
-`needs-requirements` → `requirements-approved` に変更
+デザインレビュー・承認 → `design-approved` に変更
+
+【Stage 2: 詳細要件定義（MDファイル）】
+
+    ↓
+詳細要件定義MDファイル作成（docs/requirements/REQ-{番号}.md）
+    ↓
+詳細要件定義PR作成・レビュー
+    ↓
+PRマージ → `requirements-approved` 付与
     ↓
 `ready-to-develop` 付与（実装開始可能）
+
+【Stage 3: 実装】
+
+    ↓
+実装 → PR作成
+    ↓
+CIチェック（詳細要件定義ファイル存在確認）
+    ↓
+マージ
 ```
 
-**⚠️ 重要**: `requirements-approved` ラベルがないIssueに対するPRはCIでブロックされる。
+**⚠️ 重要**:
+- `requirements-approved` ラベルがないIssueに対する `feat:` PRはCIでブロック
+- 詳細要件定義ファイル（docs/requirements/REQ-{番号}.md）がないPRはCIでブロック
 
 ---
 
