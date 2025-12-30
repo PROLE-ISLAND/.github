@@ -95,11 +95,36 @@ gh pr create --title "feat: {説明}" --body "closes #{番号}"
 
 **詳細は [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) を参照。**
 
-| Level | 観点数 | 用途 | 必須タイミング |
+| Level | 観点数 | 用途 | カバレッジ目標 |
 |-------|--------|------|---------------|
-| Bronze | 27 | PR最低基準 | PRオープン時 |
-| Silver | 31 | マージ可能基準 | マージ前 |
-| Gold | 19 | 本番リリース基準 | 本番デプロイ前 |
+| Bronze | 27 | PR最低基準 | 80% |
+| Silver | 31 | マージ可能基準 | 85% |
+| Gold | 19 | 本番リリース基準 | 95% |
+
+### ローカル事前チェック（PR前に必須）
+
+```bash
+# Bronze Gate チェック（型チェック, Lint, テスト, カバレッジ80%, ビルド）
+npm run check:bronze
+
+# Silver Gate チェック（Bronze + セキュリティ監査, カバレッジ85%）
+npm run check:silver
+
+# Gold Gate チェック（Silver + E2E, カバレッジ95%）
+npm run check:gold
+```
+
+### 実装ガイド参照
+
+DoDの各観点を達成するための具体的な方法は Wiki を参照:
+
+| ガイド | 内容 |
+|--------|------|
+| [DoD達成ガイド](https://github.com/PROLE-ISLAND/.github/wiki/DoD達成ガイド) | 77観点の具体的達成方法 |
+| [テスト実装パターン](https://github.com/PROLE-ISLAND/.github/wiki/テスト実装パターン) | カバレッジ80%達成のパターン |
+| [セキュリティ実装ガイド](https://github.com/PROLE-ISLAND/.github/wiki/セキュリティ実装ガイド) | C1-C11の実装方法 |
+| [DB設計レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/DB設計レビューガイド) | G1-G6の確認プロセス |
+| [API設計ガイド](https://github.com/PROLE-ISLAND/.github/wiki/API設計ガイド) | F1-F8 + OpenAPIテンプレート |
 
 ### 成熟度計算
 

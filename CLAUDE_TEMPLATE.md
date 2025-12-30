@@ -62,6 +62,49 @@ src/
 
 ---
 
+## 🎯 DoD達成のための開発フロー
+
+### 1. ローカル事前チェック
+
+PR作成前に必ず実行:
+
+```bash
+# Bronze Gate チェック（PR最低基準）
+npm run check:bronze
+
+# Silver Gate チェック（マージ前）
+npm run check:silver
+
+# Gold Gate チェック（本番リリース前）
+npm run check:gold
+```
+
+### 2. 実装ガイド参照
+
+| ガイド | 内容 |
+|--------|------|
+| [DoD達成ガイド](https://github.com/PROLE-ISLAND/.github/wiki/DoD達成ガイド) | 77観点の具体的達成方法 |
+| [テスト実装パターン](https://github.com/PROLE-ISLAND/.github/wiki/テスト実装パターン) | カバレッジ80%達成のパターン |
+| [セキュリティ実装ガイド](https://github.com/PROLE-ISLAND/.github/wiki/セキュリティ実装ガイド) | C1-C11の実装方法 |
+| [DB設計レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/DB設計レビューガイド) | G1-G6の確認プロセス |
+| [API設計ガイド](https://github.com/PROLE-ISLAND/.github/wiki/API設計ガイド) | F1-F8 + OpenAPIテンプレート |
+
+### 3. DB/API変更時の注意
+
+Issue/PRテンプレートのチェックリストを確認:
+
+**DB変更時**:
+- [ ] マイグレーションファイル作成
+- [ ] RLSポリシー設定
+- [ ] インデックス検討
+
+**API変更時**:
+- [ ] OpenAPI仕様更新
+- [ ] 破壊的変更の確認
+- [ ] エラーレスポンス定義
+
+---
+
 ## 🔗 関連ドキュメント
 
 ### 組織レベル
