@@ -18,11 +18,13 @@
 ├── workflow-templates/              # 再利用可能ワークフロー
 │   ├── ci.yml                       # CI（lint/test/build）
 │   ├── pr-check.yml                 # PR規約チェック
-│   └── dependabot-auto-merge.yml    # Dependabot自動マージ
+│   ├── dependabot-auto-merge.yml    # Dependabot自動マージ
+│   └── sync-templates.yml           # テンプレート自動同期
 ├── docs/                            # ガイドライン
 │   ├── CODEOWNERS_GUIDE.md          # CODEOWNERSガイド
 │   ├── DEPENDABOT_POLICY.md         # Dependabot運用ポリシー
-│   └── RULESET_STANDARDS.md         # ブランチ保護標準
+│   ├── RULESET_STANDARDS.md         # ブランチ保護標準
+│   └── TEMPLATE_SYNC_GUIDE.md       # テンプレート同期ガイド
 ├── scripts/                         # 自動化スクリプト
 │   └── setup-rulesets.sh            # Ruleset一括適用
 └── profile/
@@ -116,6 +118,37 @@ curl -o .github/workflows/dependabot-auto-merge.yml \
 ## カスタマイズ
 
 リポジトリ固有の設定が必要な場合は、各リポジトリの `.github/` に同名ファイルを配置することでオーバーライドできます。
+
+### テンプレート同期（推奨）
+
+組織テンプレートとリポジトリ固有設定を自動マージする仕組み。
+
+```
+組織テンプレート + リポジトリ固有設定 = 最終設定
+```
+
+#### セットアップ
+
+```bash
+# 1. 同期ワークフローを配置
+curl -o .github/workflows/sync-templates.yml \
+  https://raw.githubusercontent.com/PROLE-ISLAND/.github/main/workflow-templates/sync-templates.yml
+
+# 2. リポジトリ固有ルールを追加（任意）
+# .github/CODEOWNERS.local
+# .github/dependabot.local.yml
+```
+
+#### 動作
+
+| ファイル | 内容 |
+|---------|------|
+| `CODEOWNERS.local` | リポジトリ固有の所有者ルール |
+| `dependabot.local.yml` | リポジトリ固有のグループ・エコシステム |
+
+毎週月曜に自動同期し、差分があればPRを作成。
+
+詳細: [docs/TEMPLATE_SYNC_GUIDE.md](./docs/TEMPLATE_SYNC_GUIDE.md)
 
 ## 参考リンク
 
