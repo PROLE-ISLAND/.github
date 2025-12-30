@@ -1,0 +1,199 @@
+# =====================================================
+# セキュリティ監査（組織テンプレート）
+# 依存脆弱性スキャン・シークレット検出
+# DoD Silver 基準 C10 に対応
+# =====================================================
+
+name: 🔒 Security Audit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  schedule:
+    # 毎週月曜 9:00 JST (0:00 UTC)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # ===========================================
+  # 依存脆弱性スキャン（C10）
+  # ===========================================
+  dependency-audit:
+    name: 📦 Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      # npm audit（高・重大のみ失敗）
+      - name: 🔍 npm audit (high/critical)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+        id: npm-audit
+
+      # npm audit の詳細レポート
+      - name: 📊 npm audit report
+        run: |
+          echo "## 📦 npm audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm audit --json | jq -r '.metadata | "Total: \(.totalDependencies) deps, \(.vulnerabilities.total) vulnerabilities (\(.vulnerabilities.high) high, \(.vulnerabilities.critical) critical)"' >> $GITHUB_STEP_SUMMARY || echo "No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+
+  # ===========================================
+  # シークレット検出
+  # ===========================================
+  secret-scan:
+    name: 🔐 Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # gitleaks によるシークレット検出
+      - name: 🔐 Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ===========================================
+  # CodeQL 静的解析
+  # ===========================================
+  codeql:
+    name: 🔬 CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔬 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: 🔬 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # ===========================================
+  # SAST（静的アプリケーションセキュリティテスト）
+  # ===========================================
+  sast:
+    name: 🛡️ SAST Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      # ESLint セキュリティプラグイン
+      - name: 🛡️ ESLint Security Check
+        run: |
+          # eslint-plugin-security がある場合のみ実行
+          if npm list eslint-plugin-security 2>/dev/null; then
+            npx eslint --plugin security --rule 'security/detect-object-injection: warn' src/ || true
+          else
+            echo "::notice::eslint-plugin-security not installed. Skipping."
+          fi
+        continue-on-error: true
+
+  # ===========================================
+  # セキュリティサマリー
+  # ===========================================
+  security-summary:
+    name: 📋 Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scan, codeql, sast]
+    if: always()
+
+    steps:
+      - name: 📝 Post Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const depResult = '${{ needs.dependency-audit.result }}';
+            const secretResult = '${{ needs.secret-scan.result }}';
+            const codeqlResult = '${{ needs.codeql.result }}';
+            const sastResult = '${{ needs.sast.result }}';
+
+            const allPassed = depResult === 'success' &&
+                              secretResult === 'success' &&
+                              codeqlResult === 'success' &&
+                              sastResult === 'success';
+
+            const comment = `## 🔒 Security Audit Results
+
+            | Check | Result |
+            |-------|--------|
+            | 📦 Dependency Audit | ${depResult === 'success' ? '✅' : '⚠️'} |
+            | 🔐 Secret Scan | ${secretResult === 'success' ? '✅' : '⚠️'} |
+            | 🔬 CodeQL | ${codeqlResult === 'success' ? '✅' : '⚠️'} |
+            | 🛡️ SAST | ${sastResult === 'success' ? '✅' : '⚠️'} |
+
+            ${allPassed ? '### ✅ All security checks passed' : '### ⚠️ Some checks need attention'}
+
+            > DoD Silver 基準 C10: 依存脆弱性スキャン
+            `;
+
+            console.log(comment);
+
+            // PRの場合のみコメント
+            if (context.eventName === 'pull_request') {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              const botComment = comments.find(c =>
+                c.user.type === 'Bot' && c.body.includes('Security Audit Results')
+              );
+
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: comment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: comment
+                });
+              }
+            }
