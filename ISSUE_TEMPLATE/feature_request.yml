@@ -110,6 +110,48 @@ body:
       description: 実装に関するヒントや制約など
       placeholder: 関連ファイル、使用技術、制約事項など
 
+  - type: textarea
+    id: impact-scope
+    attributes:
+      label: 影響範囲
+      description: この変更が影響する範囲を記載してください
+      value: |
+        ### 変更対象
+        - [ ] フロントエンド（コンポーネント）
+        - [ ] バックエンド（API）
+        - [ ] データベース（スキーマ/マイグレーション）
+        - [ ] インフラ（CI/CD、設定）
+
+        ### 変更予定ファイル
+        -
+
+        ### 影響を受ける既存機能
+        -
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: db-changes
+    attributes:
+      label: データベース変更
+      description: DB変更がある場合はチェックしてください
+      options:
+        - label: "テーブル追加/変更あり → マイグレーション必須"
+        - label: "RLSポリシー追加/変更あり"
+        - label: "インデックス追加が必要そう"
+        - label: "DB変更なし"
+
+  - type: checkboxes
+    id: api-changes
+    attributes:
+      label: API変更
+      description: API変更がある場合はチェックしてください
+      options:
+        - label: "新規エンドポイント追加"
+        - label: "既存エンドポイント変更（破壊的変更の可能性）"
+        - label: "レスポンス形式変更"
+        - label: "API変更なし"
+
   - type: checkboxes
     id: checklist
     attributes:

@@ -73,6 +73,23 @@ body:
       label: エラーログ・スクリーンショット
       description: エラーメッセージやスクリーンショットがあれば添付
 
+  - type: textarea
+    id: impact-scope
+    attributes:
+      label: 影響範囲
+      description: このバグが影響している範囲を記載してください
+      value: |
+        ### 影響を受けている機能
+        -
+
+        ### 関連ファイル（推定）
+        -
+
+        ### 影響度
+        - [ ] 全ユーザーに影響
+        - [ ] 特定条件のユーザーのみ
+        - [ ] 開発環境のみ
+
   - type: checkboxes
     id: checklist
     attributes:
