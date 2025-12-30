@@ -209,7 +209,7 @@ gh issue view {番号}
 
 **Step 4〜8: 要件定義フロー（2段階）** ⚠️必須
 
-> **📚 参照**: [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート) | [V0-Figma活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/V0-Figma活用ガイド)
+> **📚 参照**: [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート) | [UI生成・レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/UI生成・レビューガイド) | [Feature Flags活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/Feature-Flags活用ガイド)
 
 ```
 【2段階要件定義フロー】
@@ -621,53 +621,134 @@ git push --force-with-lease
 
 ---
 
-## Figma-First ワークフロー
+## UI開発ワークフロー（v0 + Vercel Toolbar + Feature Flags）
 
-**UI/UX変更を含む機能は、Issue作成前にFigmaでデザインを作成する。**
+> 📚 参照: [UI生成・レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/UI生成・レビューガイド) | [Feature Flags活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/Feature-Flags活用ガイド)
+
+**UI/UX変更を含む機能は、v0 + Vercel Toolbar + Feature Flagsの統合ワークフローで開発する。**
 
 ```
-1. デザイン作成（Figma または v0.dev）
-   ↓
-2. Issue作成（デザインリンク込み）→ `design-review` ラベル自動付与
-   ↓
-3. デザインレビュー・承認 → `design-approved` に変更
-   ↓
-4. 実装開始 → `ready-to-develop` ラベル付与
-   ↓
-5. PR作成 → CI → マージ
+【統合ワークフロー】
+
+Phase 1: UI生成
+├── 要件・Issue確認
+├── `/ui-generate` コマンド実行
+├── v0 Platform APIで複数バリアント生成
+└── Design System Registry参照で既存UIと統一
+
+Phase 2: コード管理
+├── `ui/issue-{番号}` ブランチ作成
+├── Feature Flags定義追加（flags.ts）
+├── バリアント切り替えコンポーネント実装
+└── GitHub Push → Vercel Preview Deployment
+
+Phase 3: Preview & Review
+├── Vercel Toolbarでバリアント切り替え（Flags Explorer）
+├── ピクセル位置指定でフィードバック（Comments）
+├── 品質自動チェック（a11y / CLS / INP）
+└── 設定付きURL共有でレビュー
+
+Phase 4: 決定 & リリース
+├── デザイン決定
+├── 不要バリアント削除・コードクリーンアップ
+├── PR Merge
+└── 段階的ロールアウト（0% → 10% → 30% → 70% → 100%）
 ```
 
-**重要**: デザインリンクのない UI機能 Issue は `design-review` で保留。
+### Feature Flags設定
+
+```typescript
+// lib/flags.ts
+import { flag } from '@vercel/flags/next';
+
+// デザインバリアント切り替え
+export const designVariant = flag<'a' | 'b' | 'c'>({
+  key: '{feature}-design-variant',
+  defaultValue: 'a',
+  description: '{機能名}のデザインバリアント',
+  options: [
+    { value: 'a', label: 'パターンA' },
+    { value: 'b', label: 'パターンB' },
+    { value: 'c', label: 'パターンC' },
+  ],
+});
+
+// エッジケーステスト
+export const testMode = flag<'normal' | 'empty' | 'error' | 'loading'>({
+  key: '{feature}-test-mode',
+  defaultValue: 'normal',
+});
+
+// 段階的ロールアウト
+export const rolloutPercentage = flag<number>({
+  key: '{feature}-rollout-percentage',
+  defaultValue: 0,
+});
+```
+
+### Vercel Toolbar操作
+
+| 機能 | 用途 | ショートカット |
+|------|------|---------------|
+| **Flags Explorer** | バリアント切り替え | Ctrl → Flags |
+| **Comments** | ピクセル位置フィードバック | Ctrl → Comments |
+| **a11y Audit** | WCAG 2.0チェック | Ctrl → Accessibility |
+| **CLS Detection** | レイアウトシフト検出 | Ctrl → Layout shifts |
+| **INP** | インタラクション遅延計測 | Ctrl → Interaction timing |
 
 ### バックエンドのみの機能
 
 UI変更がない場合:
 1. Issueテンプレートで「バックエンドのみ」にチェック
 2. `no-ui` ラベルを付与
-3. Figmaリンクは不要
+3. Feature Flagsは不要
 
 ---
 
-## v0 によるAIデザイン生成
+## v0 Platform API
 
-[v0.dev](https://v0.dev) を使用して、UIコンポーネントをAIで生成。
+[v0.dev](https://v0.dev) と Design System Registry を統合して、既存UIと統一されたコンポーネントを生成。
+
+### Design System Registry設定
+
+```json
+// registry.json
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "project-name",
+  "components": [
+    {
+      "name": "score-card",
+      "files": ["src/components/ui/score-card.tsx"],
+      "dependencies": ["@radix-ui/react-progress"]
+    }
+  ],
+  "tokens": {
+    "colors": "src/styles/tokens/colors.css",
+    "fonts": "src/styles/tokens/fonts.css"
+  }
+}
+```
 
 ### v0プロンプトの必須要素
 
 ```markdown
+- 既存Design System Registryを参照
 - shadcn/uiコンポーネント使用
 - Tailwind CSS
 - ダークモード対応（dark:クラス使用）
 - 日本語テキスト
 - TypeScript対応
+- data-testid属性を含める
 ```
 
 ### v0コード使用時の必須チェック
 
-1. **ハードコード色の置換**: プロジェクトのデザインシステムに合わせる
-2. **型安全性**: Props interfaceを追加
-3. **テスト追加**: 単体テストを作成
-4. **出典記録**: コンポーネント冒頭にv0 URLをコメントで記載
+1. **Design System統合**: 既存トークン・コンポーネントとの整合性
+2. **Feature Flags統合**: バリアント切り替え実装
+3. **data-testid**: E2Eテスト用セレクター追加
+4. **型安全性**: Props interfaceを追加
+5. **出典記録**: コンポーネント冒頭にv0 URLをコメントで記載
 
 ---
 
