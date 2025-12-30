@@ -2,14 +2,101 @@
 
 ## 📚 必読ドキュメント
 
-開発開始前に以下を確認すること：
-
 | ドキュメント | 内容 | 必須度 |
 |-------------|------|--------|
 | [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) | 品質基準（77観点） | ⚠️ 最優先 |
-| [組織Wiki](https://github.com/PROLE-ISLAND/.github/wiki) | 開発標準・CI/CD・テスト戦略 | ⚠️ 必須 |
+| [組織Wiki](https://github.com/PROLE-ISLAND/.github/wiki) | 開発プロセス（Phase 0-8） | ⚠️ 必須 |
 
 > **ルール優先順位**: DoD_STANDARDS.md > 組織Wiki > リポジトリ固有CLAUDE.md
+
+---
+
+## 🎯 開発プロセスガイド（Phase 0-8）
+
+**開発は必ず以下のフェーズ順に進める。各フェーズで参照すべきドキュメントを確認すること。**
+
+### Phase 0: プロジェクト参加（新規メンバー）
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [オンボーディング](https://github.com/PROLE-ISLAND/.github/wiki/オンボーディング) | 環境構築完了 |
+| [組織リポジトリアーキテクチャ](https://github.com/PROLE-ISLAND/.github/wiki/組織リポジトリアーキテクチャ) | .github と各リポジトリの関係理解 |
+| [用語集](https://github.com/PROLE-ISLAND/.github/wiki/用語集) | プロジェクト用語の理解 |
+
+### Phase 1: 設計・技術選定
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [技術選定](https://github.com/PROLE-ISLAND/.github/wiki/技術選定) | ADR確認・新規技術はADR追加 |
+| [開発標準](https://github.com/PROLE-ISLAND/.github/wiki/開発標準) | 言語ルール・ディレクトリ構成 |
+
+### Phase 2: 要件定義・ユースケース ⚠️重要
+
+**新機能やE2Eテスト設計前に必ず実施。**
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [網羅性証明設計ガイド](https://github.com/PROLE-ISLAND/.github/wiki/網羅性証明設計ガイド) | 漏れ防止方法論の理解 |
+| [Universe抽出チェックリスト](https://github.com/PROLE-ISLAND/.github/wiki/Universe抽出チェックリスト) | ユースケース母集合の抽出 |
+| [ユースケース定義](https://github.com/PROLE-ISLAND/.github/wiki/ユースケース定義) | Role×Outcome形式で定義 |
+| [カバレッジマトリクス](https://github.com/PROLE-ISLAND/.github/wiki/カバレッジマトリクス) | MECE証明表（空白禁止） |
+
+### Phase 3: 品質基準理解
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) | 77観点の品質基準 |
+| [テスト戦略](https://github.com/PROLE-ISLAND/.github/wiki/テスト戦略) | テスト方針・カバレッジ目標 |
+
+### Phase 4: 開発・実装
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [開発標準](https://github.com/PROLE-ISLAND/.github/wiki/開発標準) | コーディングルール遵守 |
+| [コミット規約](https://github.com/PROLE-ISLAND/.github/wiki/コミット規約) | コミットメッセージ・PR作成 |
+| 本ファイル「Issue駆動開発」セクション | Issue紐付け必須 |
+
+### Phase 5: テスト設計（Gold E2E）
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [Goldテストチャーター](https://github.com/PROLE-ISLAND/.github/wiki/Goldテストチャーター) | 目的・本数上限・採用基準 |
+| [Goldトリアージスコアリング](https://github.com/PROLE-ISLAND/.github/wiki/Goldトリアージスコアリング) | 4軸評価で優先度決定 |
+| [Gold仕様テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/Gold仕様テンプレート) | GWT形式で仕様作成 |
+| [E2Eアンチパターン](https://github.com/PROLE-ISLAND/.github/wiki/E2Eアンチパターン) | 避けるべきパターン確認 |
+
+### Phase 6: テスト実装 ⚠️最重要
+
+**Gold E2Eテストは「仕様書を書いた」だけでは完了ではない。**
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [Playwright設計ルール](https://github.com/PROLE-ISLAND/.github/wiki/Playwright設計ルール) | 実装ルール遵守 |
+| [Gold実装完了チェックリスト](https://github.com/PROLE-ISLAND/.github/wiki/Gold実装完了チェックリスト) ★必読 | 環境準備→セレクター→ローカル→CI |
+
+```
+Gold E2E完了条件（B10-1〜B10-5）:
+□ B10-1: Secrets設定済み
+□ B10-2: テストデータ準備済み
+□ B10-3: セレクター存在確認済み
+□ B10-4: ローカル実行成功（3回連続pass）
+□ B10-5: CI実行成功
+```
+
+### Phase 7: CI/CD統合
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [CI-CDパイプライン](https://github.com/PROLE-ISLAND/.github/wiki/CI-CDパイプライン) | ワークフロー理解 |
+| [DoD-CIゲート連携](https://github.com/PROLE-ISLAND/.github/wiki/DoD-CIゲート連携) | DoDレベルとCI連携 |
+| [トレーサビリティ](https://github.com/PROLE-ISLAND/.github/wiki/トレーサビリティ) | UC→GS→PW→CI追跡 |
+
+### Phase 8: リリース・運用
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [リリースプロセス](https://github.com/PROLE-ISLAND/.github/wiki/リリースプロセス) | リリースフロー遵守 |
+| [トラブルシューティング](https://github.com/PROLE-ISLAND/.github/wiki/トラブルシューティング) | 問題発生時の対応 |
 
 ---
 
@@ -114,20 +201,6 @@ npm run check:silver
 npm run check:gold
 ```
 
-### 実装ガイド参照
-
-DoDの各観点を達成するための具体的な方法は Wiki を参照:
-
-| ガイド | 内容 |
-|--------|------|
-| [DoD達成ガイド](https://github.com/PROLE-ISLAND/.github/wiki/DoD達成ガイド) | 77観点の具体的達成方法 |
-| [テスト実装パターン](https://github.com/PROLE-ISLAND/.github/wiki/テスト実装パターン) | カバレッジ80%達成のパターン |
-| [Goldテストチャーター](https://github.com/PROLE-ISLAND/.github/wiki/Goldテストチャーター) | Gold E2Eの目的・採用基準 |
-| [Gold仕様テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/Gold仕様テンプレート) | GWT形式の仕様テンプレート |
-| [セキュリティ実装ガイド](https://github.com/PROLE-ISLAND/.github/wiki/セキュリティ実装ガイド) | C1-C11の実装方法 |
-| [DB設計レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/DB設計レビューガイド) | G1-G6の確認プロセス |
-| [API設計ガイド](https://github.com/PROLE-ISLAND/.github/wiki/API設計ガイド) | F1-F8 + OpenAPIテンプレート |
-
 ### 成熟度計算
 
 ```
@@ -221,13 +294,6 @@ git add . && git rebase --continue
 # 4. 強制プッシュ（自分のブランチのみ）
 git push --force-with-lease
 ```
-
-### 関連Issueの判断基準
-
-以下の場合は**1ブランチにまとめることを検討**:
-- 同一ファイルの異なる箇所を修正
-- 機能的に密結合（一方が他方に依存）
-- 同一PRでレビューした方が理解しやすい
 
 ---
 
@@ -333,21 +399,3 @@ UI機能の実装前に確認:
 - [ ] ローディング状態
 - [ ] エラー状態
 - [ ] 空状態（データがない場合）
-
----
-
-## 関連ドキュメント
-
-### 組織レベル
-- [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) - 品質基準（77観点）
-- [組織Wiki](https://github.com/PROLE-ISLAND/.github/wiki) - 詳細ガイドライン
-  - [オンボーディング](https://github.com/PROLE-ISLAND/.github/wiki/オンボーディング) - 環境構築
-  - [開発標準](https://github.com/PROLE-ISLAND/.github/wiki/開発標準) - コーディング規約
-  - [CI-CDパイプライン](https://github.com/PROLE-ISLAND/.github/wiki/CI-CDパイプライン) - CI/CD 詳細
-  - [テスト戦略](https://github.com/PROLE-ISLAND/.github/wiki/テスト戦略) - テスト方針
-  - [Gold E2E設計](https://github.com/PROLE-ISLAND/.github/wiki/Goldテストチャーター) - ユースケーステスト（Role×Outcome）
-  - [用語集](https://github.com/PROLE-ISLAND/.github/wiki/用語集) - 用語定義
-
-### リポジトリレベル
-- 各リポジトリの `CLAUDE.md` - プロジェクト固有ルール
-- 各リポジトリの Wiki - プロジェクト固有ドキュメント
