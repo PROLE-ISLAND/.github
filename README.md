@@ -7,6 +7,7 @@
 ```
 .github/
 ├── CLAUDE.md                    # Claude Code向け開発ルール
+├── DoD_STANDARDS.md             # Definition of Done 品質基準
 ├── ISSUE_TEMPLATE/              # Issue作成テンプレート
 │   ├── feature_request.yml      # 機能要望
 │   ├── bug_report.yml           # バグ報告
@@ -20,6 +21,18 @@
 ```
 
 ## 使い方
+
+### DoD（Definition of Done）基準
+
+[DoD_STANDARDS.md](./DoD_STANDARDS.md) は組織全体の品質基準を定義しています。
+
+| Level | 用途 | 観点数 |
+|-------|------|--------|
+| Bronze | PR最低基準 | 27観点 |
+| Silver | マージ可能基準 | 31観点 |
+| Gold | 本番リリース基準 | 19観点 |
+
+PRレビュー時にDoD Levelを確認し、該当レベルの基準を満たしているか検証してください。
 
 ### Issue/PRテンプレート
 
