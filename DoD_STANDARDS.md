@@ -153,6 +153,21 @@
 | B10 | **E2Eテスト** | Playwright通過 | ユーザーシナリオ検証 |
 | B11 | **負荷テスト** | k6 / Artillery | スケーラビリティ確認 |
 
+#### B10: Gold E2Eテスト完了定義
+
+> **重要**: E2Eテストは「仕様書を書いた」だけでは完了ではない。
+> 以下の全てを満たして初めて「完了」とする。
+
+| # | 完了条件 | 確認方法 |
+|---|---------|---------|
+| B10-1 | **Secrets設定済み** | `gh secret list`で必要な変数が存在 |
+| B10-2 | **テストデータ準備済み** | DBに検証用データが存在 |
+| B10-3 | **セレクター存在確認済み** | `data-testid`が実アプリに存在 |
+| B10-4 | **ローカル実行成功** | `npx playwright test e2e/gold/` が3回連続pass |
+| B10-5 | **CI実行成功** | PR作成後のチェックがgreen |
+
+詳細: [Gold実装完了チェックリスト](https://github.com/PROLE-ISLAND/.github/wiki/Gold実装完了チェックリスト)
+
 ### D. パフォーマンス（7観点）
 
 | # | 観点 | 検証方法 | 役割 |
@@ -410,4 +425,5 @@ PRテンプレートにDoD Levelを選択させる：
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2025-12-30 | B10にGold E2E完了定義（5条件）を追加 |
 | 1.0 | 2025-12-30 | Initial release - 77 criteria across Bronze/Silver/Gold |
