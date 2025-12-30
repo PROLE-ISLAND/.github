@@ -1,0 +1,438 @@
+# =============================================================================
+# OpenAPI 3.0 仕様テンプレート
+# DoD Silver F1-F8 API設計対応
+# =============================================================================
+
+openapi: 3.0.3
+
+info:
+  title: Project API
+  version: 1.0.0
+  description: |
+    プロジェクトのREST API仕様書
+
+    ## 認証
+    Bearer Token認証（Supabase Auth）を使用
+
+    ## エラーレスポンス
+    RFC 7807 Problem Details形式を採用
+
+    ## バージョニング
+    URLパスによるバージョニング（/api/v1/）
+
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: https://api.example.com/api/v1
+    description: Production
+  - url: https://staging-api.example.com/api/v1
+    description: Staging
+  - url: http://localhost:3000/api/v1
+    description: Development
+
+# =============================================================================
+# タグ定義
+# =============================================================================
+tags:
+  - name: Candidates
+    description: 候補者管理
+  - name: Assessments
+    description: 検査管理
+  - name: Analysis
+    description: 分析機能
+
+# =============================================================================
+# パス定義
+# =============================================================================
+paths:
+  # ---------------------------------------------------------------------------
+  # 候補者
+  # ---------------------------------------------------------------------------
+  /candidates:
+    get:
+      summary: 候補者一覧取得
+      tags: [Candidates]
+      operationId: listCandidates
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, completed]
+          description: ステータスでフィルタ
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: 候補者作成
+      tags: [Candidates]
+      operationId: createCandidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCandidateRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /candidates/{id}:
+    get:
+      summary: 候補者詳細取得
+      tags: [Candidates]
+      operationId: getCandidate
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: 候補者更新
+      tags: [Candidates]
+      operationId: updateCandidate
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCandidateRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: 候補者削除
+      tags: [Candidates]
+      operationId: deleteCandidate
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 削除成功
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# =============================================================================
+# コンポーネント定義
+# =============================================================================
+components:
+  # ---------------------------------------------------------------------------
+  # セキュリティスキーム
+  # ---------------------------------------------------------------------------
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth JWT Token
+
+  # ---------------------------------------------------------------------------
+  # パラメータ
+  # ---------------------------------------------------------------------------
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: リソースID
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: ページ番号
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: 1ページあたりの件数
+
+  # ---------------------------------------------------------------------------
+  # スキーマ
+  # ---------------------------------------------------------------------------
+  schemas:
+    # 候補者
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 候補者ID
+        name:
+          type: string
+          description: 氏名
+        email:
+          type: string
+          format: email
+          description: メールアドレス
+        status:
+          type: string
+          enum: [pending, active, completed]
+          description: ステータス
+        createdAt:
+          type: string
+          format: date-time
+          description: 作成日時
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - id
+        - name
+        - email
+        - status
+        - createdAt
+        - updatedAt
+
+    # 候補者作成リクエスト
+    CreateCandidateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 氏名
+        email:
+          type: string
+          format: email
+          description: メールアドレス
+      required:
+        - name
+        - email
+
+    # 候補者更新リクエスト
+    UpdateCandidateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [pending, active, completed]
+
+    # 候補者レスポンス
+    CandidateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Candidate'
+
+    # 候補者一覧レスポンス
+    CandidateListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ページネーションメタ
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 総件数
+        page:
+          type: integer
+          description: 現在のページ
+        limit:
+          type: integer
+          description: 1ページあたりの件数
+        totalPages:
+          type: integer
+          description: 総ページ数
+
+    # エラー（RFC 7807）
+    ApiError:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: エラータイプURI
+        title:
+          type: string
+          description: エラータイトル
+        status:
+          type: integer
+          description: HTTPステータスコード
+        detail:
+          type: string
+          description: エラー詳細
+        instance:
+          type: string
+          format: uri
+          description: エラー発生箇所
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+          description: フィールドエラー一覧
+      required:
+        - type
+        - title
+        - status
+        - detail
+
+    # フィールドエラー
+    FieldError:
+      type: object
+      properties:
+        field:
+          type: string
+          description: フィールド名
+        message:
+          type: string
+          description: エラーメッセージ
+
+  # ---------------------------------------------------------------------------
+  # レスポンス
+  # ---------------------------------------------------------------------------
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            type: https://example.com/errors/bad-request
+            title: Bad Request
+            status: 400
+            detail: リクエストが不正です
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            type: https://example.com/errors/unauthorized
+            title: Unauthorized
+            status: 401
+            detail: 認証が必要です
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            type: https://example.com/errors/forbidden
+            title: Forbidden
+            status: 403
+            detail: このリソースへのアクセス権限がありません
+
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            type: https://example.com/errors/not-found
+            title: Not Found
+            status: 404
+            detail: リソースが見つかりません
+
+    ValidationError:
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            type: https://example.com/errors/validation
+            title: Validation Error
+            status: 422
+            detail: 入力値が不正です
+            errors:
+              - field: email
+                message: 有効なメールアドレスを入力してください
+
+    TooManyRequests:
+      description: Too Many Requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            type: https://example.com/errors/rate-limit
+            title: Too Many Requests
+            status: 429
+            detail: レート制限を超過しました
+
+# =============================================================================
+# 認証設定
+# =============================================================================
+security:
+  - bearerAuth: []
