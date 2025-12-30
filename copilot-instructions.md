@@ -11,9 +11,29 @@
 
 ---
 
-## 🎯 開発プロセスガイド（Phase 0-8）
+## 🎯 開発プロセスガイド（Phase -1 〜 8）
 
 **開発は必ず以下のフェーズ順に進める。各フェーズで参照すべきドキュメントを確認すること。**
+
+### Phase -1: 調査（Investigation）⚠️新機能は必須
+
+**新機能開発前に既存システムを調査する。調査なしに要件定義を始めない。**
+
+| 参照ドキュメント | 確認項目 |
+|-----------------|---------|
+| [調査スキル活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/調査スキル活用ガイド) | 調査ファースト原則の理解 |
+| [/investigate スキル](https://github.com/PROLE-ISLAND/.github/blob/main/skill-templates/investigate.md) | Investigation Report v1 フォーマット |
+| [システム仕様書ガイド](https://github.com/PROLE-ISLAND/.github/wiki/システム仕様書ガイド) | 仕様書の参照・作成方法 |
+
+```
+【調査フロー】
+
+パターン1（推奨）: 調査 → Issue
+/investigate → Investigation Report v1 → Issue作成（レポートをリンク）
+
+パターン2（救済）: Issue → 調査
+Issue作成 → /investigate → 調査レポートをIssueコメントに投稿
+```
 
 ### Phase 0: プロジェクト参加（新規メンバー）
 
@@ -377,6 +397,9 @@ EOF
 | `in-progress` | 作業中 |
 | `blocked` | ブロック中 |
 | `needs-triage` | 要トリアージ |
+| `needs-investigation` | 調査待ち（PRブロック対象） |
+| `investigation-complete` | 調査完了 |
+| `no-investigation` | 調査不要（バグ修正・ドキュメント等） |
 | `needs-requirements` | 要件定義待ち |
 | `requirements-approved` | 要件定義承認済み |
 | `no-requirements` | 要件定義不要（バグ修正・ドキュメント等） |
@@ -384,12 +407,23 @@ EOF
 | `design-approved` | デザイン承認済み |
 | `no-ui` | UI変更なし |
 
-### 要件定義ラベルフロー（2段階）
+### 開発ラベルフロー（調査 → 要件定義 → 実装）
 
 ```
+【Phase -1: 調査】
+
+/investigate で既存システム調査
+    ↓
+Investigation Report v1 作成
+    ↓
+Issue作成（レポートをリンク）
+    ↓
+`needs-investigation` 自動付与
+    ↓
+調査レポート投稿完了 → `investigation-complete` に変更
+
 【Stage 1: ラフ要件定義 + デザインモック】
 
-Issue作成
     ↓
 `needs-requirements` 付与
     ↓
@@ -415,12 +449,13 @@ PRマージ → `requirements-approved` 付与
     ↓
 実装 → PR作成
     ↓
-CIチェック（詳細要件定義ファイル存在確認）
+CIチェック（調査完了 + 詳細要件定義ファイル存在確認）
     ↓
 マージ
 ```
 
-**⚠️ 重要**:
+**⚠️ 重要（CIゲート）**:
+- `investigation-complete` ラベルがないIssueに対する `feat:` PRはCIでブロック
 - `requirements-approved` ラベルがないIssueに対する `feat:` PRはCIでブロック
 - 詳細要件定義ファイル（docs/requirements/REQ-{番号}.md）がないPRはCIでブロック
 

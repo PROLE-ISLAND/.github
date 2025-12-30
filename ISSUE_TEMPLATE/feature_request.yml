@@ -1,7 +1,7 @@
 name: Feature Request
 description: 機能要望・新機能追加
 title: "[Feature]: "
-labels: ["feature", "needs-triage"]
+labels: ["feature", "needs-triage", "needs-investigation"]
 body:
   - type: markdown
     attributes:
@@ -12,6 +12,11 @@ body:
         - [DoD基準](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md)
         - [Goldテストチャーター](https://github.com/PROLE-ISLAND/.github/wiki/Goldテストチャーター)
         - [ユースケース定義](https://github.com/PROLE-ISLAND/.github/wiki/ユースケース定義)
+        - [調査スキル活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/調査スキル活用ガイド)
+
+        ### ⚠️ 調査ファースト原則
+        **Issue作成前に既存システムの調査を行ってください。**
+        `/investigate` コマンドで調査レポートを作成し、このIssueにリンクしてください。
 
         ### Figma-First ルール
         **UI/UX変更を含む機能は、デザイン（Figma または v0）を先に作成してください。**
@@ -45,6 +50,61 @@ body:
       default: 1
     validations:
       required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 📋 事前調査（Investigation）
+
+        > **重要**: 既存システムを理解せずに開発を始めると手戻りが発生します。
+        > `/investigate` コマンドで調査レポートを作成してからIssueを作成してください。
+
+  - type: input
+    id: investigation_report
+    attributes:
+      label: 調査レポートリンク ⚠️推奨
+      description: |
+        `/investigate` で作成した調査レポートへのリンク。
+        IssueコメントURL、または別ドキュメントのURL。
+        未調査の場合は「未調査」と記入（needs-investigation ラベルが付与されます）
+      placeholder: "https://github.com/PROLE-ISLAND/xxx/issues/123#issuecomment-456 または「未調査」"
+
+  - type: input
+    id: existing_system_name
+    attributes:
+      label: 関連する既存システム名
+      description: |
+        この機能が拡張・変更する既存システムの名前。
+        例: GFD-Gate v1, Assessment Engine, Report Generator
+        新規システムの場合は「新規」と記入。
+      placeholder: "GFD-Gate v1"
+
+  - type: input
+    id: system_spec_link
+    attributes:
+      label: 関連仕様書リンク
+      description: |
+        関連する既存システムの仕様書へのリンク（docs/system-specs/...）
+        存在しない場合は「なし」と記入。
+      placeholder: "docs/system-specs/assessment/gfd-gate-v1.md"
+
+  - type: checkboxes
+    id: investigation_checklist
+    attributes:
+      label: 事前調査チェックリスト
+      description: Issue作成前に確認してください
+      options:
+        - label: "既存実装を調査し、拡張ポイントを特定した"
+        - label: "破壊ポイント（壊れる可能性がある箇所）を特定した"
+        - label: "調査レポートを作成した（または調査不要と判断した理由がある）"
+        - label: "**調査不要**: バグ修正・ドキュメント・CI修正など"
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 📝 機能定義
 
   - type: textarea
     id: description

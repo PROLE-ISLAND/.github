@@ -1,0 +1,225 @@
+# 調査ガバナンスワークフロー
+# 要件定義を含むPRで関連Issueに investigation-complete ラベルがない場合にブロック
+#
+# 使用方法: 各リポジトリの .github/workflows/ にコピー
+
+name: Investigation Governance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-investigation:
+    name: 調査完了チェック
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: write
+
+    steps:
+      - name: PRタイトルから変更種別を判定
+        id: check-type
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          # 調査不要な変更種別
+          if [[ "$PR_TITLE" =~ ^(fix|docs|style|refactor|test|chore|ci|deps|perf): ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "reason=変更種別が調査不要（$PR_TITLE）" >> $GITHUB_OUTPUT
+          elif [[ "$PR_TITLE" =~ ^feat: ]]; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "reason=新機能（feat）は調査必須" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "reason=変更種別不明、調査チェック実施" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 関連Issueを抽出
+        if: steps.check-type.outputs.skip == 'false'
+        id: extract-issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # closes #123, fixes #456, resolves #789 などを抽出
+          ISSUE_NUMBERS=$(echo "$PR_BODY" | grep -oE '(closes|fixes|resolves)\s*#[0-9]+' | grep -oE '[0-9]+' | head -1)
+
+          if [ -z "$ISSUE_NUMBERS" ]; then
+            echo "issue_number=" >> $GITHUB_OUTPUT
+            echo "has_issue=false" >> $GITHUB_OUTPUT
+          else
+            echo "issue_number=$ISSUE_NUMBERS" >> $GITHUB_OUTPUT
+            echo "has_issue=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: リポジトリをチェックアウト
+        if: steps.check-type.outputs.skip == 'false' && steps.extract-issue.outputs.has_issue == 'true'
+        uses: actions/checkout@v4
+
+      - name: 要件定義ファイルの変更を検出
+        if: steps.check-type.outputs.skip == 'false' && steps.extract-issue.outputs.has_issue == 'true'
+        id: check-requirements-change
+        run: |
+          # 変更されたファイルを取得
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || echo "")
+
+          # docs/requirements/ 配下の変更があるか確認
+          if echo "$CHANGED_FILES" | grep -q "^docs/requirements/"; then
+            echo "has_requirements_change=true" >> $GITHUB_OUTPUT
+            echo "requirements_message=⚠️ 要件定義ファイルの変更を検出" >> $GITHUB_OUTPUT
+          else
+            echo "has_requirements_change=false" >> $GITHUB_OUTPUT
+            echo "requirements_message=要件定義ファイルの変更なし" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Issueラベルをチェック
+        if: steps.check-type.outputs.skip == 'false' && steps.extract-issue.outputs.has_issue == 'true'
+        id: check-labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUMBER="${{ steps.extract-issue.outputs.issue_number }}"
+          REPO="${{ github.repository }}"
+
+          # Issueのラベルを取得
+          LABELS=$(gh api repos/$REPO/issues/$ISSUE_NUMBER --jq '.labels[].name' 2>/dev/null || echo "")
+
+          echo "Issue #$ISSUE_NUMBER のラベル: $LABELS"
+
+          # investigation-complete チェック
+          if echo "$LABELS" | grep -q "investigation-complete"; then
+            echo "investigation_complete=true" >> $GITHUB_OUTPUT
+            echo "investigation_message=✅ 調査完了済み（investigation-complete ラベルあり）" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -q "needs-investigation"; then
+            echo "investigation_complete=false" >> $GITHUB_OUTPUT
+            echo "investigation_message=❌ 調査未完了（needs-investigation ラベルあり）" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -q "no-investigation"; then
+            echo "investigation_complete=true" >> $GITHUB_OUTPUT
+            echo "investigation_message=✅ 調査不要（no-investigation ラベルあり）" >> $GITHUB_OUTPUT
+          else
+            echo "investigation_complete=false" >> $GITHUB_OUTPUT
+            echo "investigation_message=⚠️ 調査ステータス不明（ラベルを付与してください）" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 調査レポートの存在を確認
+        if: steps.check-type.outputs.skip == 'false' && steps.extract-issue.outputs.has_issue == 'true'
+        id: check-report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUMBER="${{ steps.extract-issue.outputs.issue_number }}"
+          REPO="${{ github.repository }}"
+
+          # Issueのコメントから調査レポートを検索
+          COMMENTS=$(gh api repos/$REPO/issues/$ISSUE_NUMBER/comments --jq '.[].body' 2>/dev/null || echo "")
+
+          if echo "$COMMENTS" | grep -q "Investigation Report v1"; then
+            echo "has_report=true" >> $GITHUB_OUTPUT
+            echo "report_message=✅ 調査レポート（Investigation Report v1）が存在" >> $GITHUB_OUTPUT
+          else
+            echo "has_report=false" >> $GITHUB_OUTPUT
+            echo "report_message=⚠️ 調査レポートが見つかりません" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 結果をPRにコメント
+        if: steps.check-type.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          # コメント本文を作成
+          if [ "${{ steps.extract-issue.outputs.has_issue }}" == "false" ]; then
+            COMMENT="## 🔬 調査ガバナンスチェック結果
+
+          ❌ **関連Issueが見つかりません**
+
+          PR本文に \`closes #番号\` 形式でIssueを紐付けてください。
+
+          **参照**: [調査スキル活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/調査スキル活用ガイド)"
+          else
+            ISSUE_NUMBER="${{ steps.extract-issue.outputs.issue_number }}"
+            INVESTIGATION_MESSAGE="${{ steps.check-labels.outputs.investigation_message }}"
+            REPORT_MESSAGE="${{ steps.check-report.outputs.report_message }}"
+            REQUIREMENTS_MESSAGE="${{ steps.check-requirements-change.outputs.requirements_message }}"
+
+            COMMENT="## 🔬 調査ガバナンスチェック結果
+
+          **関連Issue**: #$ISSUE_NUMBER
+
+          ### チェック項目
+
+          | 項目 | 結果 |
+          |------|------|
+          | 調査ステータス | $INVESTIGATION_MESSAGE |
+          | 調査レポート | $REPORT_MESSAGE |
+          | 要件定義変更 | $REQUIREMENTS_MESSAGE |
+
+          **参照**:
+          - [調査スキル活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/調査スキル活用ガイド)
+          - [/investigate スキル](https://github.com/PROLE-ISLAND/.github/blob/main/skill-templates/investigate.md)
+          - [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート)"
+          fi
+
+          # 既存のコメントを探して更新、なければ新規作成
+          EXISTING_COMMENT=$(gh api repos/$REPO/issues/$PR_NUMBER/comments --jq '.[] | select(.body | startswith("## 🔬 調査ガバナンスチェック結果")) | .id' | head -1)
+
+          if [ -n "$EXISTING_COMMENT" ]; then
+            gh api repos/$REPO/issues/comments/$EXISTING_COMMENT -X PATCH -f body="$COMMENT"
+          else
+            gh api repos/$REPO/issues/$PR_NUMBER/comments -f body="$COMMENT"
+          fi
+
+      - name: 調査未完了の場合に失敗
+        if: steps.check-type.outputs.skip == 'false'
+        run: |
+          FAILED=false
+
+          if [ "${{ steps.extract-issue.outputs.has_issue }}" == "false" ]; then
+            echo "❌ 関連Issueが見つかりません"
+            echo "PR本文に 'closes #番号' 形式でIssueを紐付けてください"
+            exit 1
+          fi
+
+          # 調査完了チェック（feat PRの場合のみ強制）
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$PR_TITLE" =~ ^feat: ]]; then
+            if [ "${{ steps.check-labels.outputs.investigation_complete }}" != "true" ]; then
+              echo "❌ 調査が完了していません"
+              echo "${{ steps.check-labels.outputs.investigation_message }}"
+              echo ""
+              echo "【調査ファースト原則】"
+              echo "1. /investigate コマンドで既存システムを調査"
+              echo "2. Investigation Report v1 を Issue コメントに投稿"
+              echo "3. investigation-complete ラベルを付与"
+              echo "4. 要件定義を開始"
+              FAILED=true
+            fi
+          fi
+
+          # 要件定義ファイル変更時は調査完了必須
+          if [ "${{ steps.check-requirements-change.outputs.has_requirements_change }}" == "true" ]; then
+            if [ "${{ steps.check-labels.outputs.investigation_complete }}" != "true" ]; then
+              echo "❌ 要件定義ファイルを変更するPRには調査完了が必須です"
+              FAILED=true
+            fi
+          fi
+
+          if [ "$FAILED" == "true" ]; then
+            echo ""
+            echo "【調査→要件定義フロー】"
+            echo "Step 1: /investigate で既存システム調査"
+            echo "Step 2: Investigation Report v1 を作成"
+            echo "Step 3: investigation-complete ラベル付与"
+            echo "Step 4: 要件定義開始"
+            exit 1
+          fi
+
+          echo "✅ 調査ガバナンスチェック通過"
+
+      - name: スキップ時のメッセージ
+        if: steps.check-type.outputs.skip == 'true'
+        run: |
+          echo "ℹ️ 調査チェックをスキップ"
+          echo "${{ steps.check-type.outputs.reason }}"
