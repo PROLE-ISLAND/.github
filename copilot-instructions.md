@@ -122,6 +122,8 @@ DoDの各観点を達成するための具体的な方法は Wiki を参照:
 |--------|------|
 | [DoD達成ガイド](https://github.com/PROLE-ISLAND/.github/wiki/DoD達成ガイド) | 77観点の具体的達成方法 |
 | [テスト実装パターン](https://github.com/PROLE-ISLAND/.github/wiki/テスト実装パターン) | カバレッジ80%達成のパターン |
+| [Gold-Test-Charter](https://github.com/PROLE-ISLAND/.github/wiki/Gold-Test-Charter) | Gold E2Eの目的・採用基準 |
+| [Gold-Spec-Template](https://github.com/PROLE-ISLAND/.github/wiki/Gold-Spec-Template) | GWT形式の仕様テンプレート |
 | [セキュリティ実装ガイド](https://github.com/PROLE-ISLAND/.github/wiki/セキュリティ実装ガイド) | C1-C11の実装方法 |
 | [DB設計レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/DB設計レビューガイド) | G1-G6の確認プロセス |
 | [API設計ガイド](https://github.com/PROLE-ISLAND/.github/wiki/API設計ガイド) | F1-F8 + OpenAPIテンプレート |
@@ -343,6 +345,7 @@ UI機能の実装前に確認:
   - [開発標準](https://github.com/PROLE-ISLAND/.github/wiki/開発標準) - コーディング規約
   - [CI-CDパイプライン](https://github.com/PROLE-ISLAND/.github/wiki/CI-CDパイプライン) - CI/CD 詳細
   - [テスト戦略](https://github.com/PROLE-ISLAND/.github/wiki/テスト戦略) - テスト方針
+  - [Gold E2E設計](https://github.com/PROLE-ISLAND/.github/wiki/Gold-Test-Charter) - ユースケーステスト（Role×Outcome）
   - [用語集](https://github.com/PROLE-ISLAND/.github/wiki/用語集) - 用語定義
 
 ### リポジトリレベル
