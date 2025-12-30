@@ -1,26 +1,56 @@
 # PROLE-ISLAND/.github
 
-組織共通のGitHub設定・テンプレート・ワークフローを管理するリポジトリ。
+組織共通のGitHub設定・テンプレート・ワークフロー・ガバナンス基盤を管理するリポジトリ。
 
 ## 構成
 
 ```
 .github/
-├── CLAUDE.md                    # Claude Code向け開発ルール
-├── DoD_STANDARDS.md             # Definition of Done 品質基準
-├── ISSUE_TEMPLATE/              # Issue作成テンプレート
-│   ├── feature_request.yml      # 機能要望
-│   ├── bug_report.yml           # バグ報告
-│   └── config.yml               # テンプレート設定
-├── PULL_REQUEST_TEMPLATE.md     # PRテンプレート
-├── workflow-templates/          # 再利用可能ワークフロー
-│   ├── ci.yml                   # CI（lint/test/build）
-│   └── pr-check.yml             # PR規約チェック
+├── CLAUDE.md                        # Claude Code向け開発ルール
+├── DoD_STANDARDS.md                 # Definition of Done 品質基準
+├── CODEOWNERS_TEMPLATE.md           # CODEOWNERSテンプレート
+├── dependabot.yml.template          # Dependabot設定テンプレート
+├── ISSUE_TEMPLATE/                  # Issue作成テンプレート
+│   ├── feature_request.yml          # 機能要望
+│   ├── bug_report.yml               # バグ報告
+│   └── config.yml                   # テンプレート設定
+├── PULL_REQUEST_TEMPLATE.md         # PRテンプレート
+├── workflow-templates/              # 再利用可能ワークフロー
+│   ├── ci.yml                       # CI（lint/test/build）
+│   ├── pr-check.yml                 # PR規約チェック
+│   └── dependabot-auto-merge.yml    # Dependabot自動マージ
+├── docs/                            # ガイドライン
+│   ├── CODEOWNERS_GUIDE.md          # CODEOWNERSガイド
+│   ├── DEPENDABOT_POLICY.md         # Dependabot運用ポリシー
+│   └── RULESET_STANDARDS.md         # ブランチ保護標準
+├── scripts/                         # 自動化スクリプト
+│   └── setup-rulesets.sh            # Ruleset一括適用
 └── profile/
-    └── README.md                # 組織プロフィール
+    └── README.md                    # 組織プロフィール
 ```
 
-## 使い方
+## クイックスタート
+
+### 新規リポジトリのセットアップ
+
+```bash
+# 1. CODEOWNERSをコピー
+curl -o .github/CODEOWNERS \
+  https://raw.githubusercontent.com/PROLE-ISLAND/.github/main/CODEOWNERS_TEMPLATE.md
+
+# 2. Dependabot設定をコピー
+curl -o .github/dependabot.yml \
+  https://raw.githubusercontent.com/PROLE-ISLAND/.github/main/dependabot.yml.template
+
+# 3. Dependabot自動マージワークフローをコピー
+curl -o .github/workflows/dependabot-auto-merge.yml \
+  https://raw.githubusercontent.com/PROLE-ISLAND/.github/main/workflow-templates/dependabot-auto-merge.yml
+
+# 4. ブランチ保護ルールを適用
+./scripts/setup-rulesets.sh <repo-name>
+```
+
+## ガバナンス
 
 ### DoD（Definition of Done）基準
 
@@ -32,7 +62,44 @@
 | Silver | マージ可能基準 | 31観点 |
 | Gold | 本番リリース基準 | 19観点 |
 
-PRレビュー時にDoD Levelを確認し、該当レベルの基準を満たしているか検証してください。
+### CODEOWNERS
+
+[CODEOWNERS_TEMPLATE.md](./CODEOWNERS_TEMPLATE.md) でチーム別の責任分担を標準化。
+
+| チーム | 担当領域 |
+|--------|----------|
+| `@PROLE-ISLAND/developers` | デフォルト |
+| `@PROLE-ISLAND/devops` | CI/CD・インフラ |
+| `@PROLE-ISLAND/frontend` | UI・デザインシステム |
+| `@PROLE-ISLAND/backend` | API・DB |
+| `@PROLE-ISLAND/qa` | テスト |
+
+詳細: [docs/CODEOWNERS_GUIDE.md](./docs/CODEOWNERS_GUIDE.md)
+
+### Dependabot
+
+[dependabot.yml.template](./dependabot.yml.template) で依存関係更新を自動化。
+
+| 更新タイプ | 対応 |
+|-----------|------|
+| Minor/Patch | 自動マージ（CI通過時） |
+| Major | 手動レビュー必須 |
+
+詳細: [docs/DEPENDABOT_POLICY.md](./docs/DEPENDABOT_POLICY.md)
+
+### ブランチ保護
+
+[docs/RULESET_STANDARDS.md](./docs/RULESET_STANDARDS.md) でブランチ保護ルールを標準化。
+
+| ブランチ | 必須レビュー | 必須チェック |
+|---------|-------------|-------------|
+| main | 1名 + CODEOWNERS | CI, 品質ゲート |
+| develop | 1名 | CI |
+| release/* | 2名 + CODEOWNERS | CI, 品質ゲート, E2E |
+
+スクリプト: [scripts/setup-rulesets.sh](./scripts/setup-rulesets.sh)
+
+## テンプレート
 
 ### Issue/PRテンプレート
 
@@ -49,3 +116,9 @@ PRレビュー時にDoD Levelを確認し、該当レベルの基準を満たし
 ## カスタマイズ
 
 リポジトリ固有の設定が必要な場合は、各リポジトリの `.github/` に同名ファイルを配置することでオーバーライドできます。
+
+## 参考リンク
+
+- [DoD_STANDARDS.md](./DoD_STANDARDS.md) - 品質基準
+- [CLAUDE.md](./CLAUDE.md) - 開発ルール
+- [docs/](./docs/) - ガイドライン集
