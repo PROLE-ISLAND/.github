@@ -1,6 +1,15 @@
 # PROLE-ISLAND 開発ルール
 
-> **すべての実装は [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) に従う。**
+## 📚 必読ドキュメント
+
+開発開始前に以下を確認すること：
+
+| ドキュメント | 内容 | 必須度 |
+|-------------|------|--------|
+| [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) | 品質基準（77観点） | ⚠️ 最優先 |
+| [組織Wiki](https://github.com/PROLE-ISLAND/.github/wiki) | 開発標準・CI/CD・テスト戦略 | ⚠️ 必須 |
+
+> **ルール優先順位**: DoD_STANDARDS.md > 組織Wiki > リポジトリ固有CLAUDE.md
 
 ---
 
@@ -302,5 +311,15 @@ UI機能の実装前に確認:
 
 ## 関連ドキュメント
 
+### 組織レベル
 - [DoD_STANDARDS.md](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md) - 品質基準（77観点）
 - [組織Wiki](https://github.com/PROLE-ISLAND/.github/wiki) - 詳細ガイドライン
+  - [オンボーディング](https://github.com/PROLE-ISLAND/.github/wiki/オンボーディング) - 環境構築
+  - [開発標準](https://github.com/PROLE-ISLAND/.github/wiki/開発標準) - コーディング規約
+  - [CI-CDパイプライン](https://github.com/PROLE-ISLAND/.github/wiki/CI-CDパイプライン) - CI/CD 詳細
+  - [テスト戦略](https://github.com/PROLE-ISLAND/.github/wiki/テスト戦略) - テスト方針
+  - [用語集](https://github.com/PROLE-ISLAND/.github/wiki/用語集) - 用語定義
+
+### リポジトリレベル
+- 各リポジトリの `CLAUDE.md` - プロジェクト固有ルール
+- 各リポジトリの Wiki - プロジェクト固有ドキュメント
