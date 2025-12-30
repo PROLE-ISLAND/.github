@@ -621,34 +621,58 @@ git push --force-with-lease
 
 ---
 
-## UI開発ワークフロー（v0 + Vercel Toolbar + Feature Flags）
+## UI開発ワークフロー（v0 MCP + Vercel Toolbar + Feature Flags）
 
 > 📚 参照: [UI生成・レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/UI生成・レビューガイド) | [Feature Flags活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/Feature-Flags活用ガイド)
 
-**UI/UX変更を含む機能は、v0 + Vercel Toolbar + Feature Flagsの統合ワークフローで開発する。**
+**UI/UX変更を含む機能は、v0 MCP Server + Vercel Toolbar + Feature Flagsの統合ワークフローで開発する。**
+
+### v0 MCP Server設定（必須）
+
+```json
+// .mcp.json
+{
+  "mcpServers": {
+    "v0": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.v0.dev", "--header", "Authorization: Bearer ${V0_API_KEY}"]
+    }
+  }
+}
+```
+
+**GitHub Secrets**: `V0_API_KEY` を設定（https://v0.dev/chat/settings/keys で発行）
+
+### 完全自動化フロー
 
 ```
-【統合ワークフロー】
+【/ui-generate 実行で全自動化】
 
-Phase 1: UI生成
+Phase 1: UI生成（自動）
 ├── 要件・Issue確認
 ├── `/ui-generate` コマンド実行
-├── v0 Platform APIで複数バリアント生成
+├── v0 MCP Server経由でコンポーネント生成 ← 自動
+├── v0チャットURL自動取得 ← 自動
 └── Design System Registry参照で既存UIと統一
 
-Phase 2: コード管理
+Phase 2: コード管理（自動）
 ├── `ui/issue-{番号}` ブランチ作成
 ├── Feature Flags定義追加（flags.ts）
 ├── バリアント切り替えコンポーネント実装
 └── GitHub Push → Vercel Preview Deployment
 
-Phase 3: Preview & Review
+Phase 3: URL取得・通知（自動）
+├── Vercel Preview完了待機
+├── Preview URL自動取得（Vercel bot解析） ← 自動
+└── Issueに v0リンク + Preview URL 自動コメント ← 自動
+
+Phase 4: Preview & Review（手動）
 ├── Vercel Toolbarでバリアント切り替え（Flags Explorer）
 ├── ピクセル位置指定でフィードバック（Comments）
 ├── 品質自動チェック（a11y / CLS / INP）
 └── 設定付きURL共有でレビュー
 
-Phase 4: 決定 & リリース
+Phase 5: 決定 & リリース
 ├── デザイン決定
 ├── 不要バリアント削除・コードクリーンアップ
 ├── PR Merge

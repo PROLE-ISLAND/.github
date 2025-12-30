@@ -1,9 +1,20 @@
-# /ui-generate - UI生成スキル
+# /ui-generate - UI生成スキル（v0 MCP統合）
 
 ## 概要
 
-v0 Platform APIを使用してUIコンポーネントを生成し、Feature Flagsで複数バリアントを管理するスキル。
-既存デザインシステムと統一されたUIを自動生成し、Vercel Toolbarでレビュー可能な状態にする。
+**v0 MCP Server**を使用してUIコンポーネントを自動生成し、Feature Flagsで複数バリアントを管理するスキル。
+既存デザインシステムと統一されたUIを自動生成し、**v0リンクとPreview URLを自動取得**してIssueに投稿する。
+
+### 自動化される項目
+
+| 項目 | 自動化 | 方法 |
+|------|--------|------|
+| UIコンポーネント生成 | ✅ | v0 MCP Server |
+| v0チャットURL取得 | ✅ | v0 MCP レスポンス |
+| Feature Flags定義 | ✅ | コード生成 |
+| ブランチ作成・Push | ✅ | gh CLI |
+| Preview URL取得 | ✅ | Vercel botコメント解析 |
+| Issueコメント投稿 | ✅ | gh CLI |
 
 ---
 
@@ -48,47 +59,49 @@ v0 Platform APIを使用してUIコンポーネントを生成し、Feature Flag
 
 ---
 
-## 実行フロー
+## 実行フロー（完全自動化）
 
 ### Phase 1: 情報収集
 
 ```
-1. Issue #{番号} の要件を読み取り
+1. Issue #{番号} の要件を読み取り（gh issue view）
 2. 既存UIパターンを分析
    - src/components/ のコンポーネント構造
    - Design System Registry (registry.json)
    - 既存デザイントークン
-3. 配置場所を特定
+3. 配置場所・データ型を特定
 ```
 
-### Phase 2: v0生成
+### Phase 2: v0 MCP生成（自動）
 
 ```
-1. Design System Registryをv0に登録
-2. v0 Platform APIでコンポーネント生成
-   - 各バリアントごとに生成
-   - 既存デザインシステムに準拠
-3. data-testid属性を自動付与
+1. v0 MCP Serverにプロンプト送信
+   - mcp__v0__generate_component ツール使用
+   - Design Systemコンテキストを含める
+2. 生成されたコードを受信
+3. v0チャットURLを自動取得 ← 自動
+4. data-testid属性を確認・追加
 ```
 
 ### Phase 3: コード管理
 
 ```
 1. ui/issue-{番号} ブランチ作成
-2. Feature Flags定義を追加 (lib/flags.ts)
-3. バリアント切り替えコンポーネントを実装
-4. Toolbar用APIエンドポイントを追加
+2. 生成コードをファイルに書き出し
+3. Feature Flags定義を追加 (lib/flags/{feature}.ts)
+4. バリアント切り替えコンポーネントを実装
 5. GitHub Push
 ```
 
-### Phase 4: 完了通知
+### Phase 4: URL取得・通知（自動）
 
 ```
-1. Preview URLを生成
-2. Issueにコメント投稿
-   - v0リンク
-   - Preview URL
-   - Feature Flags操作方法
+1. Vercel Preview Deployment完了を待機
+   - gh pr checks --watch
+2. Vercel botコメントからPreview URLを抽出 ← 自動
+3. Issueにコメント投稿
+   - v0チャットURL（自動取得済み）
+   - Preview URL（自動取得済み）
    - Vercel Toolbar操作ガイド
 ```
 
@@ -159,50 +172,56 @@ src/components/{feature}/
 
 ---
 
-## Issueコメントテンプレート
+## Issueコメントテンプレート（自動生成）
+
+以下のコメントが**自動的にIssueに投稿**される：
 
 ```markdown
-## UI生成完了 🎨
+## 🎨 UI生成完了
 
-**Issue**: #{番号}
-**コンポーネント**: {ComponentName}
-**バリアント数**: {N}
+### 📦 生成情報
 
----
-
-### v0リンク
-
-| バリアント | v0 Link |
-|-----------|---------|
-| パターンA | https://v0.dev/chat/xxx-a |
-| パターンB | https://v0.dev/chat/xxx-b |
-| パターンC | https://v0.dev/chat/xxx-c |
+| 項目 | 値 |
+|------|-----|
+| **Issue** | #{番号} |
+| **コンポーネント** | {ComponentName} |
+| **バリアント数** | {N} |
+| **ブランチ** | `ui/issue-{番号}` |
 
 ---
 
-### Preview URL
+### 🔗 自動取得URL
 
-**URL**: https://ui-issue-{番号}.xxx.vercel.app
+| 種類 | URL |
+|------|-----|
+| **v0チャット** | https://v0.dev/chat/{自動取得ID} |
+| **Preview** | https://{自動取得}.vercel.app |
 
 ---
 
-### Vercel Toolbar操作ガイド
+### 🎛️ Vercel Toolbarでレビュー
 
-1. Preview URLにアクセス
+1. **Preview URLにアクセス**
 2. `Ctrl` キーでToolbar起動
 3. **Flags** → バリアント切り替え
+   - `{component}-design-variant`: a / b / c
+   - `{component}-test-mode`: normal / empty / error / loading
 4. **Comments** → ピクセル位置でフィードバック
 5. **Accessibility** → a11y監査確認
 6. **Layout shifts** → CLS検出確認
 
 ---
 
-### 決定後のアクション
+### ✅ 次のステップ
 
-1. 採用バリアントを決定
-2. 不要バリアントのコード削除
-3. Feature Flag定義を整理
-4. PRをマージ
+1. [ ] 全バリアントをToolbarで確認
+2. [ ] a11y監査パス確認
+3. [ ] フィードバックコメント収集
+4. [ ] 採用バリアント決定
+5. [ ] 不要バリアント削除
+6. [ ] PRマージ
+
+`/ui-generate` 自動生成 🤖
 ```
 
 ---
@@ -276,8 +295,38 @@ Mock data to use:
 
 ---
 
+## 前提条件
+
+### v0 MCP Server設定
+
+```json
+// .mcp.json
+{
+  "mcpServers": {
+    "v0": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.v0.dev",
+        "--header",
+        "Authorization: Bearer ${V0_API_KEY}"
+      ]
+    }
+  }
+}
+```
+
+### GitHub Secrets
+
+| Secret名 | 用途 |
+|----------|------|
+| `V0_API_KEY` | v0 MCP Server認証 |
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |-----|------|
+| 2025-12-31 | v0 MCP Server統合 - 完全自動化（v0リンク・Preview URL自動取得） |
 | 2025-12-31 | 初版作成（v0 + Vercel Toolbar + Feature Flags統合） |

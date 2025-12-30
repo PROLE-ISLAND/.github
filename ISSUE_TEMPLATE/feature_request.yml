@@ -180,20 +180,22 @@ body:
   - type: input
     id: v0_link
     attributes:
-      label: v0 Link（UI機能は必須）
+      label: v0 Link（/ui-generate実行後に自動取得）
       description: |
-        **UI機能は必須** - `/ui-generate` でコンポーネントを生成し、リンクを貼ってください。
-        バックエンドのみの機能はスキップ可。
-      placeholder: "https://v0.dev/chat/..."
+        `/ui-generate` 実行後に**自動取得**されます。
+        手動入力の場合は https://v0.dev/chat/... 形式で記入。
+        バックエンドのみの機能は「N/A」と記入。
+      placeholder: "/ui-generate実行後に自動取得 または 手動でURL入力"
 
   - type: input
     id: preview_url
     attributes:
-      label: Preview URL（UI機能は必須）
+      label: Preview URL（/ui-generate実行後に自動取得）
       description: |
-        Vercel Preview DeploymentのURL。Toolbarでバリアント切り替え・レビューが可能。
-        バックエンドのみの機能はスキップ可。
-      placeholder: "https://ui-issue-{番号}.xxx.vercel.app"
+        `/ui-generate` 実行後に**Vercel botコメントから自動取得**されます。
+        Toolbarでバリアント切り替え・レビューが可能。
+        バックエンドのみの機能は「N/A」と記入。
+      placeholder: "/ui-generate実行後に自動取得 または 手動でURL入力"
 
   - type: input
     id: variants
@@ -201,6 +203,7 @@ body:
       label: デザインバリアント数
       description: |
         Feature Flagsで管理しているバリアント数。
+        `/ui-generate --variants {数}` で指定可能。
         バックエンドのみの機能は「0」と記入。
       placeholder: "3"
 
