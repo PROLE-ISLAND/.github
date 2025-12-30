@@ -1,0 +1,183 @@
+# =====================================================
+# Dependabot 設定テンプレート
+# 各リポジトリの .github/dependabot.yml にコピー・カスタマイズ
+# =====================================================
+#
+# 使用方法:
+# 1. このファイルを .github/dependabot.yml にコピー
+# 2. 不要なエコシステム（npm, pip, docker等）を削除
+# 3. リポジトリ固有のグループを追加・調整
+#
+# 参考: docs/DEPENDABOT_POLICY.md
+
+version: 2
+
+updates:
+  # ---------------------------------------------------
+  # npm パッケージ更新
+  # ---------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+
+    # PR数制限
+    open-pull-requests-limit: 10
+
+    # ---------------------------------------------------
+    # グループ化戦略
+    # Major更新は個別PR（破壊的変更の可能性）
+    # Minor/Patch更新はグループ化（レビュー負荷軽減）
+    # ---------------------------------------------------
+    groups:
+      # === フレームワーク関連 ===
+      nextjs:
+        patterns:
+          - "next*"
+          - "@next/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # === バックエンド関連 ===
+      supabase:
+        patterns:
+          - "@supabase/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # === UIコンポーネント ===
+      ui-components:
+        patterns:
+          - "@radix-ui/*"
+          - "tailwindcss*"
+          - "tailwind*"
+          - "lucide-react"
+          - "class-variance-authority"
+          - "clsx"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # === テストツール ===
+      testing:
+        patterns:
+          - "vitest*"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "@playwright/*"
+          - "playwright*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # === Lint/Format ===
+      linting:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+          - "prettier*"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # === 型定義 ===
+      types:
+        patterns:
+          - "@types/*"
+        exclude-patterns:
+          - "@types/react*"  # reactグループに含まれる
+        update-types:
+          - "minor"
+          - "patch"
+
+      # === ビルドツール ===
+      build-tools:
+        patterns:
+          - "typescript"
+          - "vite*"
+          - "esbuild*"
+          - "turbo*"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # ---------------------------------------------------
+    # ラベル設定
+    # ---------------------------------------------------
+    labels:
+      - "dependencies"
+      - "P3: Low"
+
+    # ---------------------------------------------------
+    # レビュアー設定
+    # ---------------------------------------------------
+    reviewers:
+      - "PROLE-ISLAND/devops"
+
+    # ---------------------------------------------------
+    # コミットメッセージ形式
+    # ---------------------------------------------------
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+    # ---------------------------------------------------
+    # 無視パターン（必要に応じて追加）
+    # ---------------------------------------------------
+    # ignore:
+    #   - dependency-name: "lodash"
+    #     versions: [">=5.0.0"]
+
+  # ---------------------------------------------------
+  # GitHub Actions 更新
+  # ---------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "P3: Low"
+    commit-message:
+      prefix: "ci"
+
+  # ---------------------------------------------------
+  # Docker更新（該当する場合のみ）
+  # ---------------------------------------------------
+  # - package-ecosystem: "docker"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
+  #   labels:
+  #     - "dependencies"
+  #     - "docker"
+
+  # ---------------------------------------------------
+  # Python更新（該当する場合のみ）
+  # ---------------------------------------------------
+  # - package-ecosystem: "pip"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
+  #   labels:
+  #     - "dependencies"
+  #     - "python"

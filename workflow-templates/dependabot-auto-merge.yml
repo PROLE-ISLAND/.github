@@ -1,0 +1,150 @@
+# =====================================================
+# Dependabot PR 自動マージ
+# minor/patch更新でCI通過時に自動マージ
+# =====================================================
+#
+# 使用方法:
+# 1. このファイルを .github/workflows/dependabot-auto-merge.yml にコピー
+# 2. リポジトリで動作確認
+#
+# 参考: docs/DEPENDABOT_POLICY.md
+
+name: Dependabot Auto-Merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  dependabot-auto-merge:
+    name: Auto-Merge Dependabot PRs
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Dependabot メタデータ取得
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: 自動マージ条件判定
+        id: check
+        run: |
+          UPDATE_TYPE="${{ steps.metadata.outputs.update-type }}"
+          DEP_TYPE="${{ steps.metadata.outputs.dependency-type }}"
+
+          echo "Update type: $UPDATE_TYPE"
+          echo "Dependency type: $DEP_TYPE"
+
+          # マージ可能条件:
+          # 1. minor または patch 更新
+          # 2. 開発依存 または 本番依存のminor/patch
+
+          if [[ "$UPDATE_TYPE" == "version-update:semver-minor" ]] || \
+             [[ "$UPDATE_TYPE" == "version-update:semver-patch" ]]; then
+            echo "auto_merge=true" >> $GITHUB_OUTPUT
+            echo "reason=Minor/Patch更新のため自動マージ対象" >> $GITHUB_OUTPUT
+          else
+            echo "auto_merge=false" >> $GITHUB_OUTPUT
+            echo "reason=Major更新のため手動レビュー必要" >> $GITHUB_OUTPUT
+          fi
+
+      - name: CI完了待機
+        if: steps.check.outputs.auto_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.payload.pull_request.head.sha;
+
+            // 最大10分待機
+            const maxAttempts = 20;
+            const interval = 30000; // 30秒
+
+            for (let i = 0; i < maxAttempts; i++) {
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: sha,
+              });
+
+              const ciCheck = checkRuns.check_runs.find(
+                run => run.name === 'CI' || run.name.includes('build')
+              );
+
+              if (ciCheck && ciCheck.status === 'completed') {
+                if (ciCheck.conclusion === 'success') {
+                  console.log('CI passed, proceeding with auto-merge');
+                  return;
+                } else {
+                  core.setFailed(`CI failed with conclusion: ${ciCheck.conclusion}`);
+                  return;
+                }
+              }
+
+              console.log(`Waiting for CI... (attempt ${i + 1}/${maxAttempts})`);
+              await new Promise(r => setTimeout(r, interval));
+            }
+
+            core.setFailed('CI did not complete within timeout');
+
+      - name: 自動承認
+        if: steps.check.outputs.auto_merge == 'true'
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 自動マージ（squash）
+        if: steps.check.outputs.auto_merge == 'true'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Major更新通知
+        if: steps.check.outputs.auto_merge == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const updateType = '${{ steps.metadata.outputs.update-type }}';
+            const depName = '${{ steps.metadata.outputs.dependency-names }}';
+            const prevVersion = '${{ steps.metadata.outputs.previous-version }}';
+            const newVersion = '${{ steps.metadata.outputs.new-version }}';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Major更新検出
+
+**パッケージ**: \`${depName}\`
+**バージョン**: \`${prevVersion}\` → \`${newVersion}\`
+**更新タイプ**: ${updateType}
+
+この更新は **major version** の変更を含むため、手動レビューが必要です。
+
+### チェックリスト
+- [ ] CHANGELOG / Breaking Changes を確認
+- [ ] 互換性への影響を評価
+- [ ] ローカルでテスト実行
+- [ ] 必要に応じてコード修正
+
+### 対応コマンド
+\`\`\`bash
+# ローカルで確認
+npm install ${depName}@${newVersion}
+npm run lint && npm run type-check && npm run test:run
+
+# 問題なければマージ
+gh pr merge ${context.issue.number} --squash
+\`\`\`
+
+📚 [Dependabot運用ポリシー](https://github.com/PROLE-ISLAND/.github/blob/main/docs/DEPENDABOT_POLICY.md)`
+            });
