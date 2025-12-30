@@ -25,6 +25,16 @@
 ## 4. 関連Issue
 closes #
 
+## 4.1 要件定義確認 ⚠️必須
+
+> **📚 参照**: [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート)
+
+**関連Issueの要件定義ステータス**:
+- [ ] **要件定義承認済み** ← 関連Issueに `requirements-approved` ラベルあり
+- [ ] 要件定義不要 ← バグ修正・ドキュメント・CI修正など（`no-requirements` ラベル付与）
+
+⚠️ **注意**: 新機能（feat）のPRで `requirements-approved` ラベルがない場合、CIでブロックされます。
+
 ## 5. DoD Level
 
 📚 [DoD基準詳細](https://github.com/PROLE-ISLAND/.github/blob/main/DoD_STANDARDS.md)
