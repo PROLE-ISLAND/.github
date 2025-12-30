@@ -1,0 +1,238 @@
+# =====================================================
+# Gold E2Eテスト ワークフロー テンプレート
+# 事業継続に必須のユースケーステスト
+# トリガー: dod:goldラベルPR、mainへのpush
+# =====================================================
+
+name: Gold E2Eテスト
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-gold-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ==================================================
+  # 環境変数チェック（必須）
+  # ==================================================
+  check-env:
+    name: 環境変数チェック
+    runs-on: ubuntu-latest
+    outputs:
+      env_ready: ${{ steps.check.outputs.env_ready }}
+      missing_vars: ${{ steps.check.outputs.missing_vars }}
+    steps:
+      - id: check
+        name: 必須環境変数の確認
+        run: |
+          missing=""
+          env_ready="true"
+
+          # 必須環境変数をチェック（プロジェクトに合わせて編集）
+          # ==================================================
+          # E2E_TEST_EMAIL: テスト用管理者メール
+          if [ -z "${{ secrets.E2E_TEST_EMAIL }}" ]; then
+            missing="${missing}E2E_TEST_EMAIL, "
+            env_ready="false"
+          fi
+
+          # E2E_TEST_PASSWORD: テスト用管理者パスワード
+          if [ -z "${{ secrets.E2E_TEST_PASSWORD }}" ]; then
+            missing="${missing}E2E_TEST_PASSWORD, "
+            env_ready="false"
+          fi
+          # ==================================================
+
+          # 結果を出力
+          if [ "$env_ready" = "false" ]; then
+            echo "::error::❌ 必須環境変数が未設定: ${missing%%, }"
+            echo "::error::📖 設定方法: https://github.com/PROLE-ISLAND/.github/wiki/Gold実装完了チェックリスト"
+          fi
+
+          echo "env_ready=$env_ready" >> $GITHUB_OUTPUT
+          echo "missing_vars=${missing%%, }" >> $GITHUB_OUTPUT
+
+  # ==================================================
+  # 実行判定
+  # ==================================================
+  should-run:
+    name: 実行判定
+    needs: check-env
+    runs-on: ubuntu-latest
+    outputs:
+      run_gold: ${{ steps.check.outputs.run_gold }}
+    steps:
+      - id: check
+        run: |
+          # 環境変数が未設定の場合はスキップ
+          if [[ "${{ needs.check-env.outputs.env_ready }}" != "true" ]]; then
+            echo "::warning::Gold E2Eテストをスキップ: 環境変数未設定"
+            echo "run_gold=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # mainブランチへのpushは常に実行
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "run_gold=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # PRの場合、dod:goldラベルがある場合のみ実行
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            labels='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+            if echo "$labels" | grep -q "dod:gold"; then
+              echo "run_gold=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_gold=false" >> $GITHUB_OUTPUT
+            fi
+            exit 0
+          fi
+
+          # workflow_dispatchは常に実行
+          echo "run_gold=true" >> $GITHUB_OUTPUT
+
+  # ==================================================
+  # Gold E2Eテスト実行
+  # ==================================================
+  gold-e2e:
+    name: Gold E2E (${{ matrix.spec }})
+    needs: [check-env, should-run]
+    if: needs.should-run.outputs.run_gold == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          # Gold仕様に合わせて編集
+          - GS-001-example
+          # - GS-002-example
+          # - GS-003-example
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Gold E2Eテスト実行 - ${{ matrix.spec }}
+        env:
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          # 追加の環境変数をここに設定
+        run: |
+          echo "🥇 Running Gold E2E: ${{ matrix.spec }}"
+          npx playwright test e2e/gold/${{ matrix.spec }}.spec.ts --reporter=list
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gold-e2e-failure-${{ matrix.spec }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+  # ==================================================
+  # 環境変数未設定時の警告PR通知
+  # ==================================================
+  notify-env-missing:
+    name: 環境変数未設定通知
+    needs: check-env
+    if: needs.check-env.outputs.env_ready != 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: PRにコメント
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const missing = '${{ needs.check-env.outputs.missing_vars }}';
+            const body = `## ⚠️ Gold E2Eテストがスキップされました
+
+            **理由**: 必須環境変数が未設定
+
+            ### 未設定の変数
+            \`\`\`
+            ${missing}
+            \`\`\`
+
+            ### 対応方法
+            1. [Gold実装完了チェックリスト](https://github.com/PROLE-ISLAND/.github/wiki/Gold実装完了チェックリスト) を確認
+            2. GitHub Secrets に必要な変数を設定
+            3. このPRを再実行
+
+            ---
+            *このコメントは自動生成されました*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+  # ==================================================
+  # 結果サマリー
+  # ==================================================
+  gold-summary:
+    name: Gold E2Eサマリー
+    needs: [should-run, gold-e2e]
+    if: always() && needs.should-run.outputs.run_gold == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: サマリー出力
+        run: |
+          echo "## 🥇 Gold E2Eテスト結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.gold-e2e.result }}" == "success" ]]; then
+            echo "✅ **全テスト成功**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **テスト失敗あり**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "詳細は各ジョブのログを確認してください。" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==================================================
+  # スキップ時のサマリー
+  # ==================================================
+  gold-skip:
+    name: Gold E2Eスキップ
+    needs: should-run
+    if: needs.should-run.outputs.run_gold != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: スキップ理由出力
+        run: |
+          echo "## ⏭️ Gold E2Eテストをスキップ" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**理由**: dod:goldラベルがないか、環境変数が未設定" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Gold E2Eを実行するには:" >> $GITHUB_STEP_SUMMARY
+          echo "1. PRに \`dod:gold\` ラベルを付与" >> $GITHUB_STEP_SUMMARY
+          echo "2. 必要な環境変数（Secrets）を設定" >> $GITHUB_STEP_SUMMARY
