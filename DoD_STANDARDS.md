@@ -376,6 +376,29 @@
 
 ## Automation Integration
 
+### ローカルチェックスクリプト（推奨）
+
+PR作成前にローカルで品質基準を確認するためのスクリプト。
+
+```json
+{
+  "scripts": {
+    "check:bronze": "npm run lint && npm run test:run -- --coverage && npm run build",
+    "check:silver": "npm run check:bronze && npm audit --audit-level=high",
+    "check:gold": "npm run check:silver && npm run test:e2e"
+  }
+}
+```
+
+| コマンド | チェック内容 | 使用タイミング |
+|---------|------------|---------------|
+| `npm run check:bronze` | lint, 型, 単体テスト, カバレッジ, ビルド | PR作成前 |
+| `npm run check:silver` | Bronze + npm audit (high/critical) | マージ前 |
+| `npm run check:gold` | Silver + E2Eテスト | 本番リリース前 |
+
+> **Note**: 各プロジェクトの `package.json` に上記スクリプトを追加することを推奨。
+> カバレッジ閾値やE2Eディレクトリはプロジェクトに合わせて調整。
+
 ### GitHub Actions Quality Gate
 
 ```yaml
@@ -447,5 +470,6 @@ PRテンプレートにDoD Levelを選択させる：
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2 | 2025-12-30 | ローカルチェックスクリプト（check:bronze/silver/gold）を追加 |
 | 1.1 | 2025-12-30 | B10にGold E2E完了定義（5条件）を追加 |
 | 1.0 | 2025-12-30 | Initial release - 77 criteria across Bronze/Silver/Gold |
