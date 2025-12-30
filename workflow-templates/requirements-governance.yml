@@ -153,7 +153,8 @@ jobs:
 
           **参照**:
           - [要件定義テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/要件定義テンプレート)
-          - [V0-Figma活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/V0-Figma活用ガイド)
+          - [UI生成・レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/UI生成・レビューガイド)
+          - [Feature Flags活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/Feature-Flags活用ガイド)
           - [Issue駆動開発](https://github.com/PROLE-ISLAND/.github/blob/main/copilot-instructions.md#issue駆動開発)"
           fi
 

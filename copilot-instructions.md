@@ -276,17 +276,17 @@ EOF
 gh issue edit {番号} --add-label "needs-requirements"
 ```
 
-**Step 5: V0でデザインモック作成**
+**Step 5: UI生成（v0 + Feature Flags）**
 
-> 📚 参照: [V0-Figma活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/V0-Figma活用ガイド)
+> 📚 参照: [UI生成・レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/UI生成・レビューガイド) | [Feature Flags活用ガイド](https://github.com/PROLE-ISLAND/.github/wiki/Feature-Flags活用ガイド)
 
 ```bash
-# V0でデザインモックを作成し、リンクをIssueコメントに追加
+# /ui-generate でUIコンポーネントを生成し、リンクをIssueコメントに追加
 gh issue comment {番号} --body "$(cat <<'EOF'
-## デザインモック
+## UI生成完了
 
 **v0 Link**: https://v0.dev/chat/xxx
-**Figma Link**: （詳細化した場合）
+**Preview URL**: https://ui-issue-{番号}.xxx.vercel.app
 
 ### 画面一覧
 | 画面 | パス | 状態 |

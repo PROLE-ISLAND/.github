@@ -18,9 +18,10 @@ body:
         **Issue作成前に既存システムの調査を行ってください。**
         `/investigate` コマンドで調査レポートを作成し、このIssueにリンクしてください。
 
-        ### Figma-First ルール
-        **UI/UX変更を含む機能は、デザイン（Figma または v0）を先に作成してください。**
-        リンクがない場合、`design-review` ラベルで保留されます。
+        ### UI開発ワークフロー（v0 + Vercel Toolbar + Feature Flags）
+        **UI/UX変更を含む機能は、v0でデザインを生成し、Feature Flagsでバリアント管理してください。**
+        Preview URLとv0リンクがない場合、`design-review` ラベルで保留されます。
+        📚 [UI生成・レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/UI生成・レビューガイド)
 
   - type: dropdown
     id: priority
@@ -177,33 +178,43 @@ body:
         | 無いと何を諦めるか？ | | |
 
   - type: input
-    id: figma_link
-    attributes:
-      label: Figma Mockup Link
-      description: |
-        **UI機能は必須** - Figmaを作成してリンクを貼ってください。
-        バックエンドのみの機能はスキップ可。
-      placeholder: "https://www.figma.com/file/..."
-
-  - type: input
     id: v0_link
     attributes:
-      label: v0 Generation Link（任意）
+      label: v0 Link（UI機能は必須）
       description: |
-        v0.devでUIを生成した場合、URLを貼ってください。
-        shadcn/ui + Tailwindなのでそのまま使えます。
+        **UI機能は必須** - `/ui-generate` でコンポーネントを生成し、リンクを貼ってください。
+        バックエンドのみの機能はスキップ可。
       placeholder: "https://v0.dev/chat/..."
+
+  - type: input
+    id: preview_url
+    attributes:
+      label: Preview URL（UI機能は必須）
+      description: |
+        Vercel Preview DeploymentのURL。Toolbarでバリアント切り替え・レビューが可能。
+        バックエンドのみの機能はスキップ可。
+      placeholder: "https://ui-issue-{番号}.xxx.vercel.app"
+
+  - type: input
+    id: variants
+    attributes:
+      label: デザインバリアント数
+      description: |
+        Feature Flagsで管理しているバリアント数。
+        バックエンドのみの機能は「0」と記入。
+      placeholder: "3"
 
   - type: checkboxes
     id: design_checklist
     attributes:
-      label: デザインチェックリスト
+      label: UI開発チェックリスト
       description: UI/UX機能の場合、以下を確認してください
       options:
-        - label: "Figma または v0 でモックアップを作成し、上記にリンクを貼った"
-        - label: "モバイルレスポンシブ対応を考慮した"
-        - label: "ダークモード対応を確認した"
-        - label: "アクセシビリティを確認した"
+        - label: "v0でUIコンポーネントを生成した"
+        - label: "Feature Flagsでバリアント管理を設定した"
+        - label: "Preview URLでVercel Toolbarが動作する"
+        - label: "Toolbarのa11y監査をパスした"
+        - label: "Toolbarでバリアントを切り替えてレビュー可能"
         - label: "バックエンドのみの機能（UI変更なし）"
 
   - type: textarea
