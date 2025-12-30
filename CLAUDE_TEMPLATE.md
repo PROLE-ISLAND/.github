@@ -85,8 +85,8 @@ npm run check:gold
 |--------|------|
 | [DoD達成ガイド](https://github.com/PROLE-ISLAND/.github/wiki/DoD達成ガイド) | 77観点の具体的達成方法 |
 | [テスト実装パターン](https://github.com/PROLE-ISLAND/.github/wiki/テスト実装パターン) | カバレッジ80%達成のパターン |
-| [Gold-Test-Charter](https://github.com/PROLE-ISLAND/.github/wiki/Gold-Test-Charter) | Gold E2Eの目的・採用基準 |
-| [Gold-Spec-Template](https://github.com/PROLE-ISLAND/.github/wiki/Gold-Spec-Template) | GWT形式の仕様テンプレート |
+| [Goldテストチャーター](https://github.com/PROLE-ISLAND/.github/wiki/Goldテストチャーター) | Gold E2Eの目的・採用基準 |
+| [Gold仕様テンプレート](https://github.com/PROLE-ISLAND/.github/wiki/Gold仕様テンプレート) | GWT形式の仕様テンプレート |
 | [セキュリティ実装ガイド](https://github.com/PROLE-ISLAND/.github/wiki/セキュリティ実装ガイド) | C1-C11の実装方法 |
 | [DB設計レビューガイド](https://github.com/PROLE-ISLAND/.github/wiki/DB設計レビューガイド) | G1-G6の確認プロセス |
 | [API設計ガイド](https://github.com/PROLE-ISLAND/.github/wiki/API設計ガイド) | F1-F8 + OpenAPIテンプレート |
