@@ -1,0 +1,159 @@
+# =====================================================
+# Dependabot Configuration Template
+# 依存関係の自動更新（毎週月曜 9:00 JST）
+#
+# 使い方:
+# 1. このファイルを .github/dependabot.yml にコピー
+# 2. プロジェクト固有のグループを追加
+# 3. reviewers を調整
+#
+# Ref: https://docs.github.com/en/code-security/dependabot
+# =====================================================
+
+version: 2
+
+updates:
+  # =====================================================
+  # npm パッケージ
+  # =====================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+
+    # グルーピング（関連パッケージをまとめて更新）
+    groups:
+      # Next.js関連
+      nextjs:
+        patterns:
+          - "next*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # React関連
+      react:
+        patterns:
+          - "react*"
+          - "@types/react*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Supabase関連
+      supabase:
+        patterns:
+          - "@supabase/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # UI コンポーネント（shadcn/ui 系）
+      ui:
+        patterns:
+          - "@radix-ui/*"
+          - "tailwind*"
+          - "lucide-react"
+          - "class-variance-authority"
+          - "clsx"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # 型定義
+      types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # テストツール
+      testing:
+        patterns:
+          - "vitest*"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "@playwright/*"
+          - "playwright*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Lint/Format
+      linting:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+          - "prettier*"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+    labels:
+      - "dependencies"
+      - "P3: Low"
+
+    # レビュアー（組織チームを指定）
+    reviewers:
+      - "PROLE-ISLAND/developers"
+
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # =====================================================
+  # GitHub Actions
+  # =====================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "P3: Low"
+    commit-message:
+      prefix: "ci"
+
+# =====================================================
+# プロジェクト固有のグループ追加例
+# =====================================================
+#
+# プロジェクトに応じて追加:
+#
+# groups:
+#   # Stripe関連（ECサイト向け）
+#   stripe:
+#     patterns:
+#       - "@stripe/*"
+#       - "stripe"
+#     update-types:
+#       - "minor"
+#       - "patch"
+#
+#   # AI関連
+#   ai:
+#     patterns:
+#       - "openai"
+#       - "@anthropic-ai/*"
+#       - "langchain*"
+#     update-types:
+#       - "minor"
+#       - "patch"
+#
+#   # SurveyJS（アンケートシステム向け）
+#   surveyjs:
+#     patterns:
+#       - "survey-*"
+#     update-types:
+#       - "minor"
+#       - "patch"
