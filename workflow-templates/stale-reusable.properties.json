@@ -1,0 +1,6 @@
+{
+  "name": "Stale Issues & PRs (Reusable)",
+  "description": "放置されたIssue/PRの自動警告・クローズ（組織Reusable Workflow使用）",
+  "iconName": "octicon clock",
+  "categories": ["Automation", "Issues"]
+}

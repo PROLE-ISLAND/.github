@@ -1,0 +1,156 @@
+# =====================================================
+# Reusable Issue Close Validator
+# 組織全体で使用可能な再利用可能ワークフロー
+# =====================================================
+
+name: Reusable Issue Close Validator
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: 'Primary language for messages (ja/en)'
+        required: false
+        default: 'ja'
+        type: string
+      reopen_on_invalid:
+        description: 'Reopen issue if no valid close reason'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  validate-close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Issue Close
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const closedBy = context.payload.sender.login;
+            const lang = '${{ inputs.language }}';
+            const reopenOnInvalid = ${{ inputs.reopen_on_invalid }};
+
+            // Skip for bots
+            if (closedBy.includes('[bot]')) {
+              console.log('Closed by bot, skipping validation');
+              return;
+            }
+
+            // Get issue comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+            });
+
+            // Check for close reason in recent comments (within last 5 minutes)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const recentComments = comments.filter(c =>
+              new Date(c.created_at) > fiveMinutesAgo &&
+              c.user.login === closedBy
+            );
+
+            // Valid close patterns (日本語/英語対応)
+            const validClosePatterns = [
+              /close[sd]?\s*(by|via|with|in)\s*#\d+/i,
+              /duplicate\s*(of)?\s*#\d+/i,
+              /重複\s*#?\d+/i,
+              /won'?t\s*fix/i,
+              /対応しない/i,
+              /not\s*a\s*bug/i,
+              /バグではない/i,
+              /completed/i,
+              /完了/i,
+              /resolved/i,
+              /解決/i,
+              /fixed\s*(by|in|via)?\s*#?\d*/i,
+              /修正\s*(完了|済み)?/i,
+              /implemented/i,
+              /実装\s*(完了|済み)?/i,
+              /cancelled/i,
+              /キャンセル/i,
+              /obsolete/i,
+              /廃止/i,
+              /stale/i,
+              /古い/i,
+            ];
+
+            const hasValidReason = recentComments.some(c =>
+              validClosePatterns.some(p => p.test(c.body))
+            );
+
+            // Check if closed via PR
+            const closedViaPR = issue.state_reason === 'completed';
+
+            if (closedViaPR) {
+              console.log('Issue closed via linked PR merge');
+              return;
+            }
+
+            if (!hasValidReason && reopenOnInvalid) {
+              // Reopen the issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'open'
+              });
+
+              const warningComment = lang === 'ja' ? `## ⚠️ Issue クローズ検証
+
+このIssueは理由なく閉じられたため、再オープンしました。
+
+### 閉じる際のルール
+
+Issueを閉じる前に、以下のいずれかのコメントを追加してください：
+
+| 理由 | コメント例 |
+|------|-----------|
+| PRでの解決 | \`Closed by #123\` または \`#123 で修正\` |
+| 重複 | \`重複 #456\` または \`Duplicate of #456\` |
+| 対応しない | \`対応しない: 理由\` または \`Won't fix\` |
+| 完了 | \`完了\` または \`Completed\` |
+| 廃止 | \`廃止: 理由\` または \`Obsolete\` |
+| キャンセル | \`キャンセル: 理由\` |
+
+---
+*自動チェックです。閉じた人: @${closedBy}*` : `## ⚠️ Issue Close Validation
+
+This issue was reopened because it was closed without a valid reason.
+
+### Rules for Closing
+
+Before closing an issue, add one of the following comments:
+
+| Reason | Example |
+|--------|---------|
+| Fixed by PR | \`Closed by #123\` or \`Fixed in #123\` |
+| Duplicate | \`Duplicate of #456\` |
+| Won't fix | \`Won't fix: reason\` |
+| Completed | \`Completed\` |
+| Obsolete | \`Obsolete: reason\` |
+| Cancelled | \`Cancelled: reason\` |
+
+---
+*Automated check. Closed by: @${closedBy}*`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: warningComment
+              });
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['needs-close-reason']
+              });
+
+              console.log('Issue reopened - no valid close reason found');
+            } else {
+              console.log('Issue closed with valid reason');
+            }

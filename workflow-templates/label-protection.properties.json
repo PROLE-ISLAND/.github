@@ -1,0 +1,6 @@
+{
+  "name": "Label Protection",
+  "description": "重要ラベルの削除防止・自動復元（組織Reusable Workflow使用）",
+  "iconName": "octicon tag",
+  "categories": ["Automation", "Issues"]
+}

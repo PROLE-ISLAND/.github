@@ -1,0 +1,231 @@
+# =====================================================
+# Reusable Quality Gate (DoD判定)
+# CI完了後にPRの品質を判定
+# =====================================================
+
+name: Reusable Quality Gate
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: 'Primary language for messages (ja/en)'
+        required: false
+        default: 'ja'
+        type: string
+      ci_workflow_name:
+        description: 'Name of the CI workflow to check'
+        required: false
+        default: 'CI'
+        type: string
+      bronze_coverage:
+        description: 'Bronze level coverage threshold'
+        required: false
+        default: 80
+        type: number
+      silver_coverage:
+        description: 'Silver level coverage threshold'
+        required: false
+        default: 85
+        type: number
+      gold_coverage:
+        description: 'Gold level coverage threshold'
+        required: false
+        default: 95
+        type: number
+
+jobs:
+  quality-gate:
+    name: DoD Quality Gate
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Get PR Number
+        id: pr
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`
+            });
+            if (pulls.data.length > 0) {
+              return pulls.data[0].number;
+            }
+            return null;
+
+      - name: Check CI Result
+        id: ci-status
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "status=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine DoD Level
+        id: dod
+        if: steps.pr.outputs.result != 'null'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.result }};
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const body = pr.body || '';
+            let dodLevel = 'Silver';
+
+            if (body.includes('Gold')) {
+              dodLevel = 'Gold';
+            } else if (body.includes('Bronze')) {
+              dodLevel = 'Bronze';
+            }
+
+            const thresholds = {
+              Bronze: { coverage: ${{ inputs.bronze_coverage }}, label: '${{ inputs.language == 'ja' && 'プロトタイプ品質' || 'Prototype Quality' }}' },
+              Silver: { coverage: ${{ inputs.silver_coverage }}, label: '${{ inputs.language == 'ja' && '開発版品質' || 'Development Quality' }}' },
+              Gold: { coverage: ${{ inputs.gold_coverage }}, label: '${{ inputs.language == 'ja' && '本番品質' || 'Production Quality' }}' }
+            };
+
+            return {
+              level: dodLevel,
+              threshold: thresholds[dodLevel].coverage,
+              label: thresholds[dodLevel].label
+            };
+
+      - name: Generate Quality Report
+        id: report
+        if: steps.pr.outputs.result != 'null'
+        uses: actions/github-script@v8
+        env:
+          CI_STATUS: ${{ steps.ci-status.outputs.status }}
+          DOD_LEVEL: ${{ fromJSON(steps.dod.outputs.result).level }}
+          DOD_LABEL: ${{ fromJSON(steps.dod.outputs.result).label }}
+          LANG: ${{ inputs.language }}
+        with:
+          script: |
+            const ciStatus = process.env.CI_STATUS;
+            const dodLevel = process.env.DOD_LEVEL;
+            const dodLabel = process.env.DOD_LABEL;
+            const lang = process.env.LANG;
+
+            const msg = lang === 'ja' ? {
+              header: '## 品質ゲートレポート',
+              levelLabel: 'DoD Level',
+              checkItem: 'チェック項目',
+              result: '結果',
+              criteria: '基準',
+              lint: 'Lint',
+              typeCheck: '型チェック',
+              unitTest: '単体テスト',
+              build: 'ビルド',
+              pass: '✅ 合格',
+              fail: '❌ 要確認',
+              reviewable: '### 判定結果: ✅ レビュー可能\n\nすべてのチェックに合格しました。',
+              needsFix: '### 判定結果: ❌ 修正が必要\n\nCIが失敗しています。',
+              nextSteps: '#### 次のステップ',
+              fixSteps: '#### 修正手順'
+            } : {
+              header: '## Quality Gate Report',
+              levelLabel: 'DoD Level',
+              checkItem: 'Check Item',
+              result: 'Result',
+              criteria: 'Criteria',
+              lint: 'Lint',
+              typeCheck: 'Type Check',
+              unitTest: 'Unit Test',
+              build: 'Build',
+              pass: '✅ Pass',
+              fail: '❌ Review needed',
+              reviewable: '### Result: ✅ Ready for Review\n\nAll checks passed.',
+              needsFix: '### Result: ❌ Needs Fix\n\nCI has failed.',
+              nextSteps: '#### Next Steps',
+              fixSteps: '#### Fix Steps'
+            };
+
+            let report = `${msg.header}\n\n`;
+            report += `### ${msg.levelLabel}: ${dodLevel} (${dodLabel})\n\n`;
+            report += `| ${msg.checkItem} | ${msg.result} | ${dodLevel}${msg.criteria} |\n`;
+            report += '|-------------|------|---------------|\n';
+
+            if (ciStatus === 'pass') {
+              report += `| ${msg.lint} | ${msg.pass} | - |\n`;
+              report += `| ${msg.typeCheck} | ${msg.pass} | - |\n`;
+              report += `| ${msg.unitTest} | ${msg.pass} | - |\n`;
+              report += `| ${msg.build} | ${msg.pass} | - |\n\n`;
+              report += msg.reviewable;
+            } else {
+              report += `| ${msg.lint} | ${msg.fail} | - |\n`;
+              report += `| ${msg.typeCheck} | ${msg.fail} | - |\n`;
+              report += `| ${msg.unitTest} | ${msg.fail} | - |\n`;
+              report += `| ${msg.build} | ${msg.fail} | - |\n\n`;
+              report += msg.needsFix;
+            }
+
+            return { report, gate: ciStatus };
+
+      - name: Post Report to PR
+        if: steps.pr.outputs.result != 'null'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.result }};
+            const reportData = ${{ steps.report.outputs.result }};
+            const report = reportData.report;
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const searchTerm = '${{ inputs.language }}' === 'ja' ? '品質ゲートレポート' : 'Quality Gate Report';
+            const botComment = comments.data.find(c =>
+              c.user.type === 'Bot' && c.body.includes(searchTerm)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: report
+              });
+            }
+
+      - name: Update Commit Status
+        if: steps.pr.outputs.result != 'null'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const reportData = ${{ steps.report.outputs.result }};
+            const state = reportData.gate === 'pass' ? 'success' : 'failure';
+            const lang = '${{ inputs.language }}';
+            const description = state === 'success'
+              ? (lang === 'ja' ? 'DoD基準を満たしています' : 'Meets DoD criteria')
+              : (lang === 'ja' ? 'DoD基準を満たしていません' : 'Does not meet DoD criteria');
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.workflow_run.head_sha,
+              state: state,
+              description: description,
+              context: lang === 'ja' ? '品質ゲート / DoD判定' : 'Quality Gate / DoD Check'
+            });

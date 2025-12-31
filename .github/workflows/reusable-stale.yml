@@ -1,0 +1,116 @@
+# =====================================================
+# Reusable Stale Issues/PRs
+# 放置されたIssue/PRの自動警告・クローズ
+# =====================================================
+
+name: Reusable Stale
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: 'Primary language for messages (ja/en)'
+        required: false
+        default: 'ja'
+        type: string
+      days_before_issue_stale:
+        description: 'Days before marking issues as stale'
+        required: false
+        default: 30
+        type: number
+      days_before_issue_close:
+        description: 'Days after stale before closing issues'
+        required: false
+        default: 7
+        type: number
+      days_before_pr_stale:
+        description: 'Days before marking PRs as stale'
+        required: false
+        default: 14
+        type: number
+      days_before_pr_close:
+        description: 'Days after stale before closing PRs'
+        required: false
+        default: 7
+        type: number
+      exempt_issue_labels:
+        description: 'Labels that prevent issues from going stale (comma-separated)'
+        required: false
+        default: 'P0,P1,blocked,in-progress,decision'
+        type: string
+      exempt_pr_labels:
+        description: 'Labels that prevent PRs from going stale (comma-separated)'
+        required: false
+        default: 'blocked,in-progress'
+        type: string
+      operations_per_run:
+        description: 'Maximum operations per run'
+        required: false
+        default: 100
+        type: number
+
+jobs:
+  stale:
+    name: Mark Stale
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Stale Action
+        uses: actions/stale@v9
+        with:
+          # === Issue Settings ===
+          stale-issue-message: |
+            ${{ inputs.language == 'ja' && format('⚠️ **このIssueは{0}日間更新がありません**
+
+            - 引き続き対応が必要な場合はコメントを追加してください
+            - {1}日以内にアクティビティがない場合、自動的にクローズされます
+
+            > 作業を再開する場合は `ready-to-develop` ラベルを追加してください', inputs.days_before_issue_stale, inputs.days_before_issue_close) || format('⚠️ **This issue has had no activity for {0} days**
+
+            - Please add a comment if this is still needed
+            - It will be automatically closed after {1} more days of inactivity
+
+            > Add `ready-to-develop` label to resume work', inputs.days_before_issue_stale, inputs.days_before_issue_close) }}
+          stale-issue-label: 'stale'
+          days-before-issue-stale: ${{ inputs.days_before_issue_stale }}
+          days-before-issue-close: ${{ inputs.days_before_issue_close }}
+          close-issue-message: |
+            ${{ inputs.language == 'ja' && '🔒 **このIssueは自動クローズされました**
+
+            長期間更新がなかったため、自動的にクローズしました。
+            引き続き対応が必要な場合は、再度Issueをオープンしてください。' || '🔒 **This issue has been automatically closed**
+
+            Due to inactivity, this issue has been automatically closed.
+            Please reopen if this is still needed.' }}
+
+          # === PR Settings ===
+          stale-pr-message: |
+            ${{ inputs.language == 'ja' && format('⚠️ **このPRは{0}日間更新がありません**
+
+            - レビュー待ちの場合はレビュアーをメンションしてください
+            - 作業中の場合はコメントを追加してください
+            - {1}日以内にアクティビティがない場合、自動的にクローズされます', inputs.days_before_pr_stale, inputs.days_before_pr_close) || format('⚠️ **This PR has had no activity for {0} days**
+
+            - If waiting for review, please mention reviewers
+            - If work in progress, please add a comment
+            - It will be automatically closed after {1} more days of inactivity', inputs.days_before_pr_stale, inputs.days_before_pr_close) }}
+          stale-pr-label: 'stale'
+          days-before-pr-stale: ${{ inputs.days_before_pr_stale }}
+          days-before-pr-close: ${{ inputs.days_before_pr_close }}
+          close-pr-message: |
+            ${{ inputs.language == 'ja' && '🔒 **このPRは自動クローズされました**
+
+            長期間更新がなかったため、自動的にクローズしました。
+            引き続き作業を行う場合は、再度PRをオープンしてください。' || '🔒 **This PR has been automatically closed**
+
+            Due to inactivity, this PR has been automatically closed.
+            Please reopen if work needs to continue.' }}
+
+          # === Exemptions ===
+          exempt-issue-labels: ${{ inputs.exempt_issue_labels }}
+          exempt-pr-labels: ${{ inputs.exempt_pr_labels }}
+          labels-to-remove-when-unstale: 'stale'
+          exempt-draft-pr: true
+
+          # === Limits ===
+          operations-per-run: ${{ inputs.operations_per_run }}

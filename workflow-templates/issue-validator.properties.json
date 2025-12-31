@@ -1,0 +1,6 @@
+{
+  "name": "Issue Validator",
+  "description": "Issueテンプレートの検証・自動ラベリング（組織Reusable Workflow使用）",
+  "iconName": "octicon issue-opened",
+  "categories": ["Automation", "Issues"]
+}

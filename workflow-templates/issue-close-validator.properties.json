@@ -1,0 +1,6 @@
+{
+  "name": "Issue Close Validator",
+  "description": "Issue Close時の理由検証・自動再オープン（組織Reusable Workflow使用）",
+  "iconName": "octicon issue-closed",
+  "categories": ["Automation", "Issues"]
+}

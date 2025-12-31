@@ -1,0 +1,6 @@
+{
+  "name": "Quality Gate (Reusable)",
+  "description": "CI完了後のDoD品質判定・PRレポート投稿（組織Reusable Workflow使用）",
+  "iconName": "octicon verified",
+  "categories": ["Automation", "CI"]
+}

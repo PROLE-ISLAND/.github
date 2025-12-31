@@ -1,0 +1,6 @@
+{
+  "name": "PR Governance (Reusable)",
+  "description": "PR品質チェック・自動ラベリング・変更サマリー（組織Reusable Workflow使用）",
+  "iconName": "octicon git-pull-request",
+  "categories": ["Automation", "Pull Requests"]
+}
