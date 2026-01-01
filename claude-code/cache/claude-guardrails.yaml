@@ -1,0 +1,524 @@
+# PROLE-ISLAND Claude Code Guardrails
+# Single Source of Truth for Claude Code behavior enforcement
+# Reference: https://github.com/PROLE-ISLAND/.github/wiki
+#
+# This file defines:
+# 1. Issue creation requirements
+# 2. PR creation requirements
+# 3. Commit conventions
+# 4. Prohibited operations
+# 5. DoD standards
+#
+# Hooks (gate.py, quality-ts.py, dod-check.py) read these rules
+
+version: "1.0"
+updated: "2025-12-31"
+
+# =============================================================================
+# Issue Creation Rules
+# =============================================================================
+issue:
+  # Required: --body-file must be used (not --body or stdin)
+  body_method: "body-file"
+
+  # Prohibited patterns for --body-file value
+  prohibited_body_file_values:
+    - "-"
+    - "/dev/stdin"
+    - "/dev/fd/0"
+
+  # Required sections in Issue body
+  required_sections:
+    - id: investigation
+      name: "事前調査"
+      required: true
+      description: "調査レポートリンク必須（/investigate で作成）"
+
+    - id: priority
+      name: "優先度"
+      required: true
+      values: ["P0", "P1", "P2", "P3"]
+      description: "P0=緊急, P1=高, P2=中, P3=低"
+
+    - id: dod_level
+      name: "DoD Level"
+      required: true
+      values: ["Bronze", "Silver", "Gold"]
+      description: "必要な品質レベル"
+
+    - id: acceptance_criteria
+      name: "受け入れ条件"
+      required: true
+      description: "完了とみなす条件"
+
+  # Complexity check for sub-issue splitting
+  complexity:
+    # Markers that indicate domain changes
+    markers:
+      - "DB変更"
+      - "API変更"
+      - "UI変更"
+      - "E2Eテスト"
+      - "マイグレーション"
+      - "database"
+      - "backend"
+      - "frontend"
+    # If markers >= threshold, suggest splitting
+    split_threshold: 3
+    # Action: warn (allow with warning) or block (require split)
+    action: "warn"
+    message: "Consider splitting into sub-issues for better tracking"
+
+  # Optional but recommended sections
+  recommended_sections:
+    - id: usecase
+      name: "ユースケース"
+      description: "Who × What × Where"
+
+    - id: v0_link
+      name: "v0 Link"
+      applies_to: "UI features"
+      description: "v0.dev design link"
+
+    - id: figma_link
+      name: "Figma Link"
+      applies_to: "UI features"
+      description: "Figma design link"
+
+# =============================================================================
+# PR Creation Rules
+# =============================================================================
+pr:
+  # Required sections in PR body
+  required_sections:
+    - id: summary
+      name: "Summary"
+      description: "1-3 bullet points"
+
+    - id: test_plan
+      name: "Test plan"
+      description: "Checklist format"
+
+    - id: issue_link
+      name: "Related issues"
+      pattern: "closes #\\d+"
+      description: "Link to Issue"
+
+  # Required labels for PR creation
+  required_labels:
+    - group: "type"
+      prefix: "type:"
+      required: true
+      values: ["requirements", "implementation", "refactor", "bugfix", "docs"]
+      message: "type: ラベルが必要です（例: --label type:implementation）"
+
+    - group: "ci"
+      prefix: "ci:"
+      required: false
+      default: "ci:full"
+      values: ["skip", "fast", "full", "e2e"]
+      message: "ci: ラベルでCI範囲を指定できます"
+
+  # GitHub Actions enforces these (Hooks only warn)
+  enforcement: "github-actions"
+
+  # ==========================================================================
+  # type:requirements 専用セクション（/req コマンド用）
+  # ==========================================================================
+  type_specific:
+    requirements:
+      default_ci: "ci:skip"
+
+      # Phase 1-5 必須セクション
+      required_sections:
+        # --- Phase 1: 調査レポート ---
+        - id: phase1_investigation
+          name: "調査レポート"
+          aliases: ["Investigation Report", "Phase 1"]
+          required: true
+          description: "調査レポートリンク必須"
+          pattern: "Investigation Report|調査レポートリンク"
+
+        - id: phase1_summary
+          name: "Investigation Report v1 要約"
+          aliases: ["既存システム名", "エントリーポイント"]
+          required: true
+          description: "既存システム・キーファイル・拡張ポイント・破壊ポイント"
+
+        # --- Phase 2: 要件定義・ユースケース ---
+        - id: phase2_overview
+          name: "機能概要"
+          aliases: ["なぜ必要か", "Who", "What", "Why"]
+          required: true
+          description: "Why/Who/What が記載されている"
+
+        - id: phase2_usecase
+          name: "ユースケース定義"
+          aliases: ["UC-ID", "Role × Outcome", "UC-"]
+          required: true
+          description: "UC-ID命名規則に従った定義"
+          pattern: "UC-[A-Z]+-[A-Z]+-[A-Z]+-[A-Z]+"
+
+        - id: phase2_coverage
+          name: "カバレッジマトリクス"
+          aliases: ["MECE証明", "Role＼Outcome"]
+          required: true
+          description: "空白セル禁止のマトリクス"
+
+        - id: phase2_input_sources
+          name: "入力ソースチェックリスト"
+          aliases: ["要件網羅性証明", "FEATURES.md"]
+          required: true
+          description: "要件抽出元の明示"
+
+        - id: phase2_consistency
+          name: "外部整合性チェック"
+          aliases: ["整合性チェック"]
+          required: true
+          description: "DBスキーマ・ルーティング・テストとの整合"
+
+        # --- Phase 3: 品質基準 ---
+        - id: phase3_dod
+          name: "DoD Level"
+          aliases: ["Bronze", "Silver", "Gold"]
+          required: true
+          description: "品質レベル選択と理由"
+
+        - id: phase3_premortem
+          name: "Pre-mortem"
+          aliases: ["失敗シナリオ"]
+          required: true
+          minimum_count: 3
+          description: "3つ以上の失敗シナリオ必須"
+
+        # --- Phase 4: 技術設計 ---
+        - id: phase4_db
+          name: "データベース設計"
+          aliases: ["CRUD操作マトリクス", "RLSテスト観点", "新規テーブル"]
+          required: false
+          applies_to: "DB変更がある場合"
+          description: "CRUD + RLS設計"
+
+        - id: phase4_api
+          name: "API設計"
+          aliases: ["エラーハンドリング設計", "非機能要件"]
+          required: false
+          applies_to: "API変更がある場合"
+          description: "エンドポイント + エラーハンドリング + 非機能要件"
+
+        - id: phase4_ui
+          name: "UI設計"
+          aliases: ["画面一覧", "バリアント", "画面遷移図", "data-testid"]
+          required: false
+          applies_to: "UI変更がある場合"
+          description: "画面一覧 + バリアント + 遷移図 + data-testid"
+
+        - id: phase4_files
+          name: "変更ファイル一覧"
+          aliases: ["ファイルパス", "変更種別"]
+          required: true
+          description: "変更対象ファイルの一覧"
+
+        # --- Phase 5: テスト設計 ---
+        - id: phase5_lens
+          name: "Gold E2E候補評価"
+          aliases: ["4つのレンズ", "行動フォーカス", "欺瞞耐性"]
+          required: true
+          description: "4つのレンズ評価"
+
+        - id: phase5_triage
+          name: "トリアージスコアリング"
+          aliases: ["Impact", "Frequency", "Detectability", "Recovery Cost"]
+          required: true
+          description: "4軸スコアリング（Gold候補のみ必須）"
+
+        - id: phase5_gwt
+          name: "GWT仕様"
+          aliases: ["Gherkin", "Feature:", "Scenario:", "Given", "When", "Then"]
+          required: true
+          description: "Gold E2E用GWT仕様"
+
+        - id: phase5_playwright
+          name: "Playwrightマッピング"
+          aliases: ["GWT Step", "Playwright実装", "await page"]
+          required: true
+          description: "GWT→Playwright実装マッピング"
+
+        - id: phase5_unit
+          name: "単体テスト設計"
+          aliases: ["対象関数", "正常系", "異常系", "境界値"]
+          required: true
+          description: "単体テスト設計テーブル"
+
+        - id: phase5_traceability
+          name: "トレーサビリティ"
+          aliases: ["UC→テスト追跡", "GS-ID", "PW File", "CI Stage"]
+          required: true
+          description: "UC→GS→PW→CI追跡"
+
+        - id: phase5_integration
+          name: "統合テスト設計"
+          aliases: ["DB統合テスト", "API統合テスト", "UI統合テスト", "5.6"]
+          required: true
+          description: "DB/API/UI統合テスト設計"
+
+        # --- 共通 ---
+        - id: acceptance
+          name: "受け入れ条件"
+          aliases: ["Acceptance Criteria"]
+          required: true
+          description: "完了条件チェックリスト"
+
+    implementation:
+      default_ci: "ci:full"
+
+      # /dev 用必須セクション
+      required_sections:
+        - id: what
+          name: "What"
+          aliases: ["何を"]
+          required: true
+          description: "変更内容の説明"
+
+        - id: why
+          name: "Why"
+          aliases: ["なぜ"]
+          required: true
+          description: "変更理由の説明"
+
+        - id: req_link
+          name: "要件定義PR"
+          aliases: ["要件定義確認", "requirements"]
+          required: false
+          applies_to: "新機能の場合"
+          description: "要件定義PRへのリンク"
+          pattern: "要件定義PR.*#\\d+"
+
+        - id: traceability
+          name: "要件トレーサビリティ"
+          aliases: ["Phase", "実装状態"]
+          required: true
+          description: "/req の各Phaseとの対応表"
+
+        - id: dod_level
+          name: "DoD Level"
+          aliases: ["Bronze", "Silver", "Gold"]
+          required: true
+          description: "品質レベル選択"
+
+        - id: test_check
+          name: "テスト作成チェック"
+          aliases: ["E2Eテスト", "単体テスト", "統合テスト"]
+          required: true
+          description: "テスト作成状況"
+
+# =============================================================================
+# Commit Conventions
+# =============================================================================
+commit:
+  # Conventional Commits format
+  format: "{type}: {description}"
+
+  # Allowed prefixes
+  types:
+    - feat      # New feature
+    - fix       # Bug fix
+    - docs      # Documentation
+    - style     # Formatting, no code change
+    - refactor  # Code change, no feature/fix
+    - test      # Adding tests
+    - chore     # Maintenance
+    - ci        # CI/CD changes
+    - perf      # Performance improvement
+    - build     # Build system changes
+
+  # Description language
+  description_language: "Japanese preferred"
+
+  # Secret detection patterns (block on match)
+  secret_patterns:
+    - pattern: "(api[_-]?key|apikey)\\s*[:=]\\s*['\"][^'\"]+['\"]"
+      name: "API Key"
+      action: "block"
+
+    - pattern: "(password|passwd)\\s*[:=]\\s*['\"][^'\"]+['\"]"
+      name: "Password"
+      action: "block"
+
+    - pattern: "(secret|token)\\s*[:=]\\s*['\"][^'\"]+['\"]"
+      name: "Secret/Token"
+      action: "block"
+
+    - pattern: "sk-[a-zA-Z0-9]{20,}"
+      name: "OpenAI API Key"
+      action: "block"
+
+    - pattern: "ghp_[a-zA-Z0-9]{36}"
+      name: "GitHub Token"
+      action: "block"
+
+    - pattern: "xoxb-[a-zA-Z0-9-]+"
+      name: "Slack Bot Token"
+      action: "block"
+
+    - pattern: "AKIA[0-9A-Z]{16}"
+      name: "AWS Access Key"
+      action: "block"
+
+# =============================================================================
+# Git Push Rules
+# =============================================================================
+push:
+  # Protected branches
+  protected_branches:
+    - main
+    - master
+
+  rules:
+    - condition: "force push to protected branch"
+      action: "block"
+      message: "Force push to main/master is prohibited"
+
+    - condition: "direct push to protected branch"
+      action: "warn"
+      message: "Use PR workflow instead of direct push"
+
+    - condition: "force push to any branch"
+      action: "warn"
+      message: "Consider using --force-with-lease"
+
+# =============================================================================
+# Dangerous Operations
+# =============================================================================
+dangerous_operations:
+  - pattern: "rm -rf"
+    action: "warn"
+    message: "Dangerous deletion detected"
+
+  - pattern: "DROP TABLE"
+    action: "warn"
+    message: "Database destruction detected"
+
+  - pattern: "DELETE FROM.*WHERE 1=1"
+    action: "warn"
+    message: "Mass deletion detected"
+
+  - pattern: "TRUNCATE"
+    action: "warn"
+    message: "Table truncation detected"
+
+# =============================================================================
+# DoD (Definition of Done) Standards
+# =============================================================================
+dod:
+  bronze:
+    name: "Bronze (PR Ready)"
+    requirements:
+      - id: A1
+        name: "Type Check"
+        command: "npx tsc --noEmit"
+        required: true
+
+      - id: A2
+        name: "Lint"
+        command: "npm run lint"
+        required: true
+
+      - id: B1
+        name: "Unit Tests"
+        command: "npm run test:run"
+        required: true
+
+      - id: B2
+        name: "Coverage"
+        threshold: 80
+        required: true
+
+  silver:
+    name: "Silver (Merge Ready)"
+    inherits: "bronze"
+    requirements:
+      - id: C1
+        name: "Input Validation"
+        description: "zod schema for all inputs"
+
+      - id: C10
+        name: "Security Audit"
+        command: "npm audit --audit-level=high"
+        required: true
+
+  gold:
+    name: "Gold (Production Ready)"
+    inherits: "silver"
+    requirements:
+      - id: E2E
+        name: "E2E Tests"
+        command: "npm run test:e2e"
+        required: true
+
+      - id: K3
+        name: "Build Time"
+        threshold: "10 minutes"
+
+# =============================================================================
+# Security Patterns (for PostToolUse)
+# =============================================================================
+security_patterns:
+  typescript:
+    - pattern: "dangerouslySetInnerHTML"
+      severity: "high"
+      message: "XSS risk - use DOMPurify"
+
+    - pattern: "eval("
+      severity: "critical"
+      message: "eval() is prohibited"
+
+    - pattern: "innerHTML"
+      severity: "medium"
+      message: "Consider using textContent or DOMPurify"
+
+    - pattern: "document.write"
+      severity: "medium"
+      message: "document.write is deprecated"
+
+# =============================================================================
+# Pre-mortem Requirements
+# =============================================================================
+pre_mortem:
+  required_for:
+    - "First time task type"
+    - "Complex multi-step tasks"
+    - "Tasks affecting production"
+
+  minimum_risks: 3
+
+  checklist:
+    - "DoD definition exists in Wiki/DoD"
+    - "Identified 3+ failure causes"
+    - "Confirmation method for each cause"
+    - "User approval obtained"
+
+# =============================================================================
+# Investigation-First Principle
+# =============================================================================
+investigation:
+  required_before:
+    - "Feature request Issue creation"
+    - "Requirements definition"
+    - "System changes"
+
+  output_format: "Investigation Report v1"
+
+  required_sections:
+    - "Existing system name"
+    - "Entry points (UI/API/CLI)"
+    - "Key data models"
+    - "Key files (3-10)"
+    - "Extension points"
+    - "Breaking points"
+    - "What we want to do (1 line)"
+
+  labels:
+    pending: "needs-investigation"
+    complete: "investigation-complete"
+    skip: "no-investigation"
